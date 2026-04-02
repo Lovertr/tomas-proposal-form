@@ -868,6 +868,7 @@
 
     // Navigation
     function nextStep() {
+      saveFormData();
       if (!validateCurrentStep()) return;
 
       if (currentStep < 3) {
@@ -956,14 +957,6 @@
       hideError();
 
       if (currentStep === 1) {
-        if (!formData.client_name.trim()) {
-          showError('Please enter Client Company Name');
-          return false;
-        }
-        if (!formData.contact_person.trim()) {
-          showError('Please enter Contact Person');
-          return false;
-        }
         if (!formData.service_type) {
           showError('Please select a Service Type');
           return false;
