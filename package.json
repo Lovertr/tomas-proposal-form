@@ -1,0 +1,9 @@
+{
+  "name": "tomas-proposal-form",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "pptxgenjs": "^3.12.0",
+    "@supabase/supabase-js": "^2.39.0"
+  }
+}
