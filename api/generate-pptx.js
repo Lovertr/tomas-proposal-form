@@ -199,35 +199,50 @@ function buildProjectPurpose(pptx, data, section) {
     steps = toArray(content.process_flow || content.steps || content.flow || []);
   }
 
+  // --- Main description text ---
   let yPos = 1.25;
   if (mainText) {
-    s.addText(mainText, { x: 0.3, y: yPos, w: 12.7, h: 0.85, fontSize: 11.5, color: C.black, valign: "middle" });
-    yPos += 0.97;
+    // Use autoFit to handle long text gracefully
+    s.addText(mainText, { x: 0.3, y: yPos, w: 12.7, h: 0.75, fontSize: 11, color: C.black, valign: "top", shrinkText: true });
+    yPos += 0.85;
   }
 
-  // Limit objectives to 3 max to leave room for chevrons
+  // --- Objectives (numbered, with proper spacing) ---
   const maxObj = steps.length > 0 ? 3 : 5;
-  objectives.slice(0, maxObj).forEach((o, i) => {
-    s.addText(`${i+1}.  ${toStr(o)}`, {
-      x: 0.5, y: yPos + i * 0.55, w: 12.0, h: 0.48, fontSize: 12, color: C.black, valign: "middle",
-    });
-  });
-  yPos += Math.min(objectives.length, maxObj) * 0.55 + 0.35;
+  const objCount = Math.min(objectives.length, maxObj);
+  // Dynamic row height based on count and remaining space
+  const objRowH = steps.length > 0 ? 0.65 : 0.75;
 
+  objectives.slice(0, objCount).forEach((o, i) => {
+    // Number badge
+    s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 0.35, y: yPos + i * objRowH + 0.05, w: 0.32, h: 0.32, fill: { color: C.headerBlue }, rectRadius: 0.04 });
+    s.addText(String(i + 1), { x: 0.35, y: yPos + i * objRowH + 0.05, w: 0.32, h: 0.32, fontSize: 11, bold: true, color: C.white, align: "center", valign: "middle" });
+    // Objective text with shrinkText to prevent overflow
+    s.addText(toStr(o), {
+      x: 0.78, y: yPos + i * objRowH, w: 11.7, h: objRowH - 0.08,
+      fontSize: 11, color: C.black, valign: "middle", shrinkText: true,
+    });
+    // Light separator line
+    if (i < objCount - 1) {
+      s.addShape(pptx.shapes.LINE, { x: 0.78, y: yPos + (i + 1) * objRowH - 0.02, w: 11.5, h: 0, line: { color: "E8E8E8", pt: 0.5 } });
+    }
+  });
+  yPos += objCount * objRowH + 0.25;
+
+  // --- Process Flow chevrons ---
   if (steps.length > 0) {
-    // Ensure chevrons don't go below footer area (max y = 6.5)
     const flowY = Math.min(yPos, 5.5);
     const flowColors = [C.headerBlue, C.teal, C.headerBlue, C.teal, C.orange, C.orange];
     const maxSteps = Math.min(steps.length, 6);
-    const stepW = Math.min(1.92, 12.4 / maxSteps - 0.2);
+    const stepW = Math.min(1.92, 12.4 / maxSteps - 0.18);
 
     steps.slice(0, maxSteps).forEach((st, i) => {
       const text = typeof st === "string" ? st : st.name || st.title || st.t || `Step ${i+1}`;
       const col = (typeof st === "object" && st.color) ? st.color : flowColors[i % flowColors.length];
-      const x = 0.3 + i * (stepW + 0.2);
+      const x = 0.3 + i * (stepW + 0.18);
 
-      s.addShape(pptx.shapes.CHEVRON, { x, y: flowY, w: stepW, h: 0.95, fill: { color: col }, line: { color: col } });
-      s.addText(text, { x, y: flowY, w: stepW, h: 0.95, fontSize: 10, bold: true, color: C.white, align: "center", valign: "middle" });
+      s.addShape(pptx.shapes.CHEVRON, { x, y: flowY, w: stepW, h: 0.88, fill: { color: col }, line: { color: col } });
+      s.addText(text, { x: x + 0.15, y: flowY, w: stepW - 0.3, h: 0.88, fontSize: 9.5, bold: true, color: C.white, align: "center", valign: "middle", shrinkText: true });
     });
   }
 }
@@ -434,7 +449,6 @@ function buildSystemFlowDiagram(pptx, data, section) {
 
   const content = section.content;
   let steps = toArray(content);
-  // If content is an object with a steps/flow key, prefer that
   if (typeof content === "object" && !Array.isArray(content)) {
     steps = toArray(content.steps || content.flow || content.process || content);
   }
@@ -445,65 +459,124 @@ function buildSystemFlowDiagram(pptx, data, section) {
 
   const flowColors = [C.headerBlue, C.teal, C.headerBlue, C.teal, C.orange];
   const maxSteps = Math.min(steps.length, 5);
+  const stepW = maxSteps <= 3 ? 3.8 : (12.4 / maxSteps - 0.15);
 
   steps.slice(0, maxSteps).forEach((st, i) => {
-    const x = 0.5 + i * 2.52;
+    const x = 0.5 + i * (stepW + 0.15);
     const title = typeof st === "string" ? st : (st.title || st.name || st.t || `Step ${i+1}`);
-    const detail = typeof st === "object" ? (st.detail || st.description || st.s || "") : "";
+    const detail = typeof st === "object" ? toStr(st.detail || st.description || st.s || "") : "";
     const col = (typeof st === "object" && st.color) ? st.color : flowColors[i % flowColors.length];
 
-    s.addShape(pptx.shapes.CHEVRON, { x, y: 1.88, w: 2.35, h: 1.05, fill: { color: col }, line: { color: col } });
-    s.addText(title, { x, y: 1.88, w: 2.35, h: 0.58, fontSize: 10, bold: true, color: C.white, align: "center", valign: "middle" });
-    if (detail) s.addText(detail, { x, y: 2.42, w: 2.35, h: 0.46, fontSize: 8, color: "DDDDDD", align: "center", italic: true, valign: "middle" });
+    // Chevron: ONLY title (no detail to avoid duplication)
+    s.addShape(pptx.shapes.CHEVRON, { x, y: 1.88, w: stepW, h: 0.65, fill: { color: col }, line: { color: col } });
+    s.addText(title, { x: x + 0.18, y: 1.88, w: stepW - 0.36, h: 0.65, fontSize: 9.5, bold: true, color: C.white, align: "center", valign: "middle", shrinkText: true });
 
-    // Detail box below
-    s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: x + 0.08, y: 3.08, w: 2.18, h: 2.35, fill: { color: C.white }, line: { color: col, pt: 1 }, rectRadius: 0.07 });
-    s.addShape(pptx.shapes.RECTANGLE, { x: x + 0.08, y: 3.08, w: 2.18, h: 0.3, fill: { color: col } });
-    s.addText("Detail", { x: x + 0.08, y: 3.08, w: 2.18, h: 0.3, fontSize: 8.5, bold: true, color: C.white, align: "center", valign: "middle" });
-    s.addText(detail || title, { x: x + 0.15, y: 3.42, w: 2.0, h: 1.88, fontSize: 9.5, color: C.black, valign: "top" });
+    // Detail box below: shows full detail text (NOT duplicated from chevron)
+    const boxY = 2.68;
+    const boxH = 2.55;
+    s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: x + 0.05, y: boxY, w: stepW - 0.1, h: boxH, fill: { color: C.white }, line: { color: col, pt: 1 }, rectRadius: 0.07 });
+    s.addShape(pptx.shapes.RECTANGLE, { x: x + 0.05, y: boxY, w: stepW - 0.1, h: 0.28, fill: { color: col } });
+    s.addText(title, { x: x + 0.05, y: boxY, w: stepW - 0.1, h: 0.28, fontSize: 8, bold: true, color: C.white, align: "center", valign: "middle" });
+    // Detail content
+    const detailText = detail || "Details to be provided";
+    s.addText(detailText, { x: x + 0.12, y: boxY + 0.32, w: stepW - 0.24, h: boxH - 0.38, fontSize: 8.5, color: C.black, valign: "top", shrinkText: true });
   });
 
-  addImageZone(pptx, s, 0.3, 5.55, 4.0, 1.6, "HANDY SCREEN");
-  addImageZone(pptx, s, 4.5, 5.55, 4.0, 1.6, "PC SCREEN");
-  addImageZone(pptx, s, 8.7, 5.55, 4.3, 1.6, "SAMPLE OUTPUT");
+  // Image placeholder zones at bottom
+  addImageZone(pptx, s, 0.3, 5.38, 4.0, 1.6, "HANDY SCREEN");
+  addImageZone(pptx, s, 4.5, 5.38, 4.0, 1.6, "PC SCREEN");
+  addImageZone(pptx, s, 8.7, 5.38, 4.3, 1.6, "SAMPLE OUTPUT");
 }
 
 // ═══════════════════════════════════════════════════════════
 // SLIDE — OPERATION FLOW (numbered circle steps)
 // ═══════════════════════════════════════════════════════════
 function buildOperationFlow(pptx, data, section) {
+  const items = toArray(section.content);
+  const maxItems = Math.min(items.length, 6);
+  const flowColors = [C.headerBlue, C.teal, C.orange, C.headerBlue, C.teal, C.orange];
+
+  // ──────── PAGE 1: Summary overview ────────
   const s = pptx.addSlide();
   addHeader(pptx, s, "Suggestion | Explaining Operation Flow", null);
 
   s.addText("Summary operation flow", { x: 0.3, y: 1.28, w: 9, h: 0.35, fontSize: 13, bold: true, color: C.headerBlue });
   s.addShape(pptx.shapes.LINE, { x: 0.3, y: 1.65, w: 9, h: 0, line: { color: C.headerBlue, pt: 1.5 } });
 
-  const items = toArray(section.content);
-  // Fit within y=1.78 to y=6.8 (5.02" total), with gap between items
-  const maxItems = Math.min(items.length, 5);
-  const totalH = 5.02;
-  const gap = 0.12;
-  const itemH = Math.min(1.2, (totalH - (maxItems - 1) * gap) / Math.max(maxItems, 1));
-  const titleH = 0.34;
+  // Chevron flow bar at top (compact summary of all steps)
+  const chevronW = maxItems > 0 ? Math.min(2.0, 12.4 / maxItems - 0.12) : 2.0;
+  items.slice(0, maxItems).forEach((f, i) => {
+    const title = typeof f === "string" ? f : (f.title || f.name || f.t || `Step ${i+1}`);
+    const x = 0.3 + i * (chevronW + 0.12);
+    const col = flowColors[i % flowColors.length];
+    s.addShape(pptx.shapes.CHEVRON, { x, y: 1.78, w: chevronW, h: 0.55, fill: { color: col }, line: { color: col } });
+    s.addText(title, { x: x + 0.15, y: 1.78, w: chevronW - 0.3, h: 0.55, fontSize: 8.5, bold: true, color: C.white, align: "center", valign: "middle", shrinkText: true });
+  });
+
+  // Summary list below
+  const listStartY = 2.55;
+  const totalH = 4.25;
+  const itemH = Math.min(1.0, totalH / Math.max(maxItems, 1));
 
   items.slice(0, maxItems).forEach((f, i) => {
-    const y = 1.78 + i * (itemH + gap);
+    const y = listStartY + i * itemH;
     const title = typeof f === "string" ? f : (f.title || f.name || f.t || `Step ${i+1}`);
     const desc = typeof f === "object" ? toStr(f.description || f.detail || f.d || "") : "";
+    const col = flowColors[i % flowColors.length];
 
-    // Number circle aligned with title
-    s.addShape(pptx.shapes.OVAL, { x: 0.3, y: y + 0.02, w: 0.38, h: 0.38, fill: { color: C.headerBlue } });
-    s.addText(String(i+1), { x: 0.3, y: y + 0.02, w: 0.38, h: 0.38, fontSize: 12, bold: true, color: C.white, align: "center", valign: "middle" });
-    // Title
-    s.addText(title, { x: 0.82, y, w: 8.5, h: titleH, fontSize: 11.5, bold: true, color: C.black, valign: "middle" });
-    // Description: starts below title, height = remaining card space
-    if (desc) {
-      const descH = Math.max(itemH - titleH - 0.04, 0.25);
-      s.addText(desc, { x: 0.82, y: y + titleH + 0.04, w: 8.5, h: descH, fontSize: 10, color: C.gray, valign: "top" });
+    s.addShape(pptx.shapes.OVAL, { x: 0.3, y: y + 0.03, w: 0.35, h: 0.35, fill: { color: col } });
+    s.addText(String(i+1), { x: 0.3, y: y + 0.03, w: 0.35, h: 0.35, fontSize: 11, bold: true, color: C.white, align: "center", valign: "middle" });
+    s.addText(title, { x: 0.78, y, w: 8.5, h: 0.32, fontSize: 11, bold: true, color: C.black, valign: "middle" });
+    if (desc && itemH > 0.5) {
+      s.addText(desc, { x: 0.78, y: y + 0.33, w: 8.5, h: itemH - 0.38, fontSize: 9, color: C.gray, valign: "top", shrinkText: true });
     }
   });
 
-  addImageZone(pptx, s, 9.8, 1.28, 3.2, 5.55, "SCREEN FLOW");
+  addImageZone(pptx, s, 9.8, 2.55, 3.2, 4.25, "FLOW DIAGRAM");
+
+  // ──────── PAGE 2+: Individual detail pages per step ────────
+  items.slice(0, maxItems).forEach((f, i) => {
+    const title = typeof f === "string" ? f : (f.title || f.name || f.t || `Step ${i+1}`);
+    const desc = typeof f === "object" ? toStr(f.description || f.detail || f.d || "") : "";
+    const points = typeof f === "object" ? toArray(f.points || f.bullets || f.items || []) : [];
+    const col = flowColors[i % flowColors.length];
+
+    const ds = pptx.addSlide();
+    addHeader(pptx, ds, `Operation flow Detail | ${title}`, null);
+
+    // Top: chevron flow bar showing all steps (highlight current)
+    items.slice(0, maxItems).forEach((st, si) => {
+      const stTitle = typeof st === "string" ? st : (st.title || st.name || st.t || `Step ${si+1}`);
+      const stCol = si === i ? flowColors[si % flowColors.length] : "CCCCCC";
+      const sx = 0.3 + si * (chevronW + 0.12);
+      ds.addShape(pptx.shapes.CHEVRON, { x: sx, y: 1.22, w: chevronW, h: 0.48, fill: { color: stCol }, line: { color: stCol } });
+      ds.addText(stTitle, { x: sx + 0.15, y: 1.22, w: chevronW - 0.3, h: 0.48, fontSize: 8, bold: si === i, color: C.white, align: "center", valign: "middle", shrinkText: true });
+    });
+
+    // Left side: description content box
+    ds.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 0.3, y: 1.88, w: 6.2, h: 4.8, fill: { color: C.white }, line: { color: col, pt: 1.2 }, rectRadius: 0.08 });
+
+    // Step title inside box
+    ds.addText("Operation Flow — " + title, { x: 0.5, y: 1.95, w: 5.8, h: 0.38, fontSize: 12, bold: true, color: C.black, valign: "middle" });
+
+    // Description text
+    let contentY = 2.4;
+    if (desc) {
+      ds.addText(desc, { x: 0.5, y: contentY, w: 5.8, h: 1.5, fontSize: 10.5, color: C.black, valign: "top", shrinkText: true });
+      contentY += 1.6;
+    }
+
+    // Bullet points
+    points.slice(0, 6).forEach((pt, pi) => {
+      if (contentY > 6.2) return;
+      ds.addText("•  " + toStr(pt), { x: 0.6, y: contentY, w: 5.6, h: 0.32, fontSize: 10, color: "444444", valign: "top" });
+      contentY += 0.35;
+    });
+
+    // Right side: image placeholder zones (2 zones for screenshots)
+    addImageZone(pptx, ds, 6.8, 1.88, 6.2, 2.25, title + " — Screenshot 1");
+    addImageZone(pptx, ds, 6.8, 4.28, 6.2, 2.4, title + " — Screenshot 2");
+  });
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -815,46 +888,137 @@ function buildMaintenance(pptx, data, section) {
 // SLIDE — FUNCTION LIST TABLE
 // ═══════════════════════════════════════════════════════════
 function buildFunctionList(pptx, data, section) {
-  const funcs = toArray(section.content);
+  const content = section.content;
 
-  // Paginate: max 12 data rows per page (header + 12 × 0.38 = 4.56" + header row = safe)
+  // Support two formats:
+  // A) Array of functions: [{category, name, description}, ...]
+  // B) Object with categories: {Inbound: [{name, description}], Outbound: [...]}
+  let allRows = [];
+  let categories = [];
+
+  if (typeof content === "object" && !Array.isArray(content)) {
+    // Format B: grouped by category keys
+    for (const [catName, catItems] of Object.entries(content)) {
+      if (Array.isArray(catItems)) {
+        categories.push(catName);
+        catItems.forEach((fn, i) => {
+          allRows.push({
+            category: catName,
+            isCategoryHeader: i === 0,
+            num: i + 1,
+            name: typeof fn === "string" ? fn : toStr(fn.name || fn.function_name || fn.title || ""),
+            desc: typeof fn === "object" ? toStr(fn.description || fn.detail || "") : "",
+          });
+        });
+      }
+    }
+  }
+
+  // Fallback to flat array
+  if (allRows.length === 0) {
+    const funcs = toArray(content);
+    funcs.forEach((fn, i) => {
+      const cat = typeof fn === "object" ? toStr(fn.category || fn.module || "") : "";
+      allRows.push({
+        category: cat,
+        isCategoryHeader: false,
+        num: i + 1,
+        name: typeof fn === "string" ? fn : toStr(fn.name || fn.function_name || fn.title || ""),
+        desc: typeof fn === "object" ? toStr(fn.description || fn.detail || "") : "",
+      });
+    });
+  }
+
+  // Paginate: max 12 data rows per page
   const rowsPerPage = 12;
   const pages = [];
-  for (let p = 0; p < funcs.length; p += rowsPerPage) {
-    pages.push(funcs.slice(p, p + rowsPerPage));
+  for (let p = 0; p < allRows.length; p += rowsPerPage) {
+    pages.push(allRows.slice(p, p + rowsPerPage));
   }
   if (pages.length === 0) pages.push([]);
 
   const headerRow = [
-    { text: "#", options: { fill: C.headerBlue, color: C.white, bold: true, fontSize: 10, align: "center" } },
-    { text: "Category", options: { fill: C.headerBlue, color: C.white, bold: true, fontSize: 10 } },
-    { text: "Function", options: { fill: C.headerBlue, color: C.white, bold: true, fontSize: 10 } },
-    { text: "Description", options: { fill: C.headerBlue, color: C.white, bold: true, fontSize: 10 } },
+    { text: "#", options: { fill: C.headerBlue, color: C.white, bold: true, fontSize: 9, align: "center" } },
+    { text: "Category", options: { fill: C.headerBlue, color: C.white, bold: true, fontSize: 9 } },
+    { text: "Function", options: { fill: C.headerBlue, color: C.white, bold: true, fontSize: 9 } },
+    { text: "Description", options: { fill: C.headerBlue, color: C.white, bold: true, fontSize: 9 } },
   ];
 
-  pages.forEach((pageFuncs, pageIdx) => {
+  pages.forEach((pageRows, pageIdx) => {
     const s = pptx.addSlide();
     const pageLabel = pages.length > 1 ? ` (${pageIdx + 1}/${pages.length})` : "";
-    addHeader(pptx, s, "Function List" + pageLabel, null);
+    addHeader(pptx, s, "Function | List" + pageLabel, null);
 
     const tableData = [headerRow];
-    const baseIndex = pageIdx * rowsPerPage;
+    let prevCat = "";
 
-    pageFuncs.forEach((fn, i) => {
-      const cat = typeof fn === "object" ? toStr(fn.category || fn.module || "") : "";
-      const name = typeof fn === "string" ? fn : toStr(fn.name || fn.function_name || fn.title || "");
-      const desc = typeof fn === "object" ? toStr(fn.description || fn.detail || "") : "";
-      const bg = (baseIndex + i) % 2 === 0 ? "FFFFFF" : "F5F7FA";
+    pageRows.forEach((row) => {
+      // Insert category header row when category changes
+      if (row.category && row.category !== prevCat) {
+        tableData.push([
+          { text: "#", options: { fill: "0088CC", color: C.white, bold: true, fontSize: 8.5, align: "center" } },
+          { text: row.category, options: { fill: "0088CC", color: C.white, bold: true, fontSize: 9 } },
+          { text: row.category, options: { fill: "0088CC", color: C.white, bold: true, fontSize: 9 } },
+          { text: "", options: { fill: "0088CC" } },
+        ]);
+        prevCat = row.category;
+      }
+
+      const bg = row.num % 2 === 0 ? "F5F7FA" : "FFFFFF";
       tableData.push([
-        { text: String(baseIndex + i + 1), options: { fill: bg, fontSize: 9, align: "center" } },
-        { text: cat, options: { fill: bg, fontSize: 9 } },
-        { text: name, options: { fill: bg, fontSize: 9, bold: true } },
-        { text: desc, options: { fill: bg, fontSize: 9, color: C.gray } },
+        { text: String(row.num), options: { fill: bg, fontSize: 8.5, align: "center" } },
+        { text: row.name, options: { fill: bg, fontSize: 8.5 } },
+        { text: row.name, options: { fill: bg, fontSize: 8.5, bold: true } },
+        { text: row.desc, options: { fill: bg, fontSize: 8.5, color: C.gray } },
       ]);
     });
 
-    s.addTable(tableData, { x: 0.3, y: 1.4, w: 12.7, border: { pt: 0.5, color: "CCCCCC" }, colW: [0.5, 2.5, 3.5, 6.2], rowH: 0.38 });
+    s.addTable(tableData, { x: 0.3, y: 1.35, w: 12.7, border: { pt: 0.5, color: "CCCCCC" }, colW: [0.45, 2.5, 3.5, 6.25], rowH: 0.35 });
   });
+
+  // ──── Web Screen Pages: one per category ────
+  const screensContent = typeof content === "object" && !Array.isArray(content) ? content : null;
+  const screenCategories = screensContent
+    ? Object.keys(screensContent).filter(k => Array.isArray(screensContent[k]) && screensContent[k].length > 0)
+    : categories.length > 0 ? [...new Set(categories)] : [];
+
+  // Also check for explicit screen_pages in content
+  const screenPages = (typeof content === "object" && content && content.screen_pages) ? toArray(content.screen_pages) : [];
+
+  // Generate screen pages from categories
+  const screensToRender = screenPages.length > 0
+    ? screenPages
+    : screenCategories.map(cat => ({ title: cat, description: `${cat} functions overview` }));
+
+  screensToRender.forEach((screen) => {
+    const screenTitle = typeof screen === "string" ? screen : (screen.title || screen.name || toStr(screen));
+    const screenDesc = typeof screen === "object" ? toStr(screen.description || "") : "";
+    buildScreenPage(pptx, screenTitle, screenDesc);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// SLIDE — WEB SCREEN PAGE (image placeholder for each function area)
+// ═══════════════════════════════════════════════════════════
+function buildScreenPage(pptx, title, description) {
+  const s = pptx.addSlide();
+  addHeader(pptx, s, title + " | Screen", null);
+
+  // Description text
+  if (description) {
+    s.addText(description, { x: 0.3, y: 1.2, w: 12.7, h: 0.35, fontSize: 10, color: C.gray, valign: "middle" });
+  }
+
+  // Large image placeholder zone (main screenshot area)
+  const imgY = description ? 1.65 : 1.3;
+  const imgH = description ? 5.2 : 5.55;
+
+  // PEGASUS badge
+  s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 0.3, y: imgY, w: 1.3, h: 0.3, fill: { color: C.orange }, rectRadius: 0.04 });
+  s.addText("PEGASUS", { x: 0.3, y: imgY, w: 1.3, h: 0.3, fontSize: 8, bold: true, color: C.white, align: "center", valign: "middle" });
+
+  // Main screenshot placeholder
+  addImageZone(pptx, s, 0.3, imgY + 0.4, 12.7, imgH - 0.4, title + " — Web Screen");
 }
 
 // ═══════════════════════════════════════════════════════════
