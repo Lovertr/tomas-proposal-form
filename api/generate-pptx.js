@@ -182,6 +182,7 @@ function buildCoverSlide(pptx, data) {
 
 // ═══════════════════════════════════════════════════════════
 // SLIDE — PROJECT PURPOSE (objectives + chevron flow)
+// Dynamic Y: chevrons positioned BELOW objectives with gap
 // ═══════════════════════════════════════════════════════════
 function buildProjectPurpose(pptx, data, section) {
   const s = pptx.addSlide();
@@ -198,17 +199,24 @@ function buildProjectPurpose(pptx, data, section) {
     steps = toArray(content.process_flow || content.steps || content.flow || []);
   }
 
+  let yPos = 1.25;
   if (mainText) {
-    s.addText(mainText, { x: 0.3, y: 1.25, w: 12.7, h: 0.85, fontSize: 11.5, color: C.black, valign: "middle" });
+    s.addText(mainText, { x: 0.3, y: yPos, w: 12.7, h: 0.85, fontSize: 11.5, color: C.black, valign: "middle" });
+    yPos += 0.97;
   }
 
-  objectives.slice(0, 5).forEach((o, i) => {
+  // Limit objectives to 3 max to leave room for chevrons
+  const maxObj = steps.length > 0 ? 3 : 5;
+  objectives.slice(0, maxObj).forEach((o, i) => {
     s.addText(`${i+1}.  ${toStr(o)}`, {
-      x: 0.5, y: (mainText ? 2.22 : 1.3) + i * 0.55, w: 12.0, h: 0.48, fontSize: 12, color: C.black, valign: "middle",
+      x: 0.5, y: yPos + i * 0.55, w: 12.0, h: 0.48, fontSize: 12, color: C.black, valign: "middle",
     });
   });
+  yPos += Math.min(objectives.length, maxObj) * 0.55 + 0.35;
 
   if (steps.length > 0) {
+    // Ensure chevrons don't go below footer area (max y = 6.5)
+    const flowY = Math.min(yPos, 5.5);
     const flowColors = [C.headerBlue, C.teal, C.headerBlue, C.teal, C.orange, C.orange];
     const maxSteps = Math.min(steps.length, 6);
     const stepW = Math.min(1.92, 12.4 / maxSteps - 0.2);
@@ -218,8 +226,8 @@ function buildProjectPurpose(pptx, data, section) {
       const col = (typeof st === "object" && st.color) ? st.color : flowColors[i % flowColors.length];
       const x = 0.3 + i * (stepW + 0.2);
 
-      s.addShape(pptx.shapes.CHEVRON, { x, y: 4.05, w: stepW, h: 0.95, fill: { color: col }, line: { color: col } });
-      s.addText(text, { x, y: 4.05, w: stepW, h: 0.95, fontSize: 10, bold: true, color: C.white, align: "center", valign: "middle" });
+      s.addShape(pptx.shapes.CHEVRON, { x, y: flowY, w: stepW, h: 0.95, fill: { color: col }, line: { color: col } });
+      s.addText(text, { x, y: flowY, w: stepW, h: 0.95, fontSize: 10, bold: true, color: C.white, align: "center", valign: "middle" });
     });
   }
 }
@@ -244,19 +252,32 @@ function buildPainPoint(pptx, data, section) {
   addHeader(pptx, s, "Current Pain Point", 3);
 
   const problems = toArray(section.content);
-  const maxP = Math.min(problems.length, 5);
-  const cardH = Math.min(1.28, 5.55 / Math.max(maxP, 1) - 0.14);
+  // Limit to 4 cards max to prevent overflow on 7.5" slide
+  const maxP = Math.min(problems.length, 4);
+  // Dynamic card height: fit within y=1.3 to y=6.85 (5.55" total)
+  // Each card needs gap of 0.16 between them
+  const totalH = 5.55;
+  const cardH = Math.min(1.35, (totalH - (maxP - 1) * 0.16) / Math.max(maxP, 1));
 
   problems.slice(0, maxP).forEach((p, i) => {
-    const y = 1.3 + i * (cardH + 0.14);
+    const y = 1.3 + i * (cardH + 0.16);
     const title = typeof p === "string" ? p : (p.title || p.name || p.problem || toStr(p));
     const pts = Array.isArray(p.points) ? p.points : (p.details ? (Array.isArray(p.details) ? p.details : [p.details]) : (p.description ? [p.description] : []));
 
     s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 0.3, y, w: 9.2, h: cardH, fill: { color: C.ltgray }, line: { color: "BBBBBB", pt: 1 }, rectRadius: 0.07 });
-    s.addText(`${i+1}. ${title}`, { x: 0.5, y: y + 0.08, w: 8.8, h: 0.36, fontSize: 12, bold: true, color: C.black });
+    // Title: starts 0.06" from top, height 0.32"
+    s.addText(`${i+1}. ${title}`, { x: 0.5, y: y + 0.06, w: 8.8, h: 0.32, fontSize: 12, bold: true, color: C.black, valign: "middle" });
 
-    pts.slice(0, 3).forEach((pt, pi) => {
-      s.addText(`- ${toStr(pt)}`, { x: 0.7, y: y + 0.42 + pi * 0.28, w: 8.6, h: 0.26, fontSize: 10.5, color: "333333" });
+    // Bullets: start after title ends (0.06 + 0.32 + 0.04 gap = 0.42")
+    // But limit bullets based on remaining card space
+    const bulletStartY = y + 0.42;
+    const remainingH = cardH - 0.42 - 0.04; // leave 0.04" bottom padding
+    const bulletH = 0.24;
+    const bulletGap = 0.27;
+    const maxBullets = Math.min(pts.length, 3, Math.floor(remainingH / bulletGap));
+
+    pts.slice(0, maxBullets).forEach((pt, pi) => {
+      s.addText(`- ${toStr(pt)}`, { x: 0.7, y: bulletStartY + pi * bulletGap, w: 8.6, h: bulletH, fontSize: 10, color: "333333", valign: "top" });
     });
   });
 
@@ -279,46 +300,62 @@ function buildBenefitsOverview(pptx, data, section) {
     reductions = toArray(content.reductions || content.use_reduce || content.metrics || content.kpis || []);
   }
 
-  const colY = 1.25, colH = 5.85, colW = 3.8;
+  const colY = 1.25, colH = 5.65, colW = 3.8;
+  const headerH = 0.4;
+  const contentStartY = colY + headerH + 0.12; // 0.12" gap after header
+  const contentAreaH = colH - headerH - 0.12;  // available space for items
 
-  // Col 1: Problem (gray)
+  // === Col 1: Problem (gray) ===
   s.addShape(pptx.shapes.RECTANGLE, { x: 0.18, y: colY, w: colW, h: colH, fill: { color: "F2F2F2" }, line: { color: C.ltgray, pt: 1 } });
-  s.addShape(pptx.shapes.RECTANGLE, { x: 0.18, y: colY, w: colW, h: 0.4, fill: { color: "888888" } });
-  s.addText("\u26A0  Problem of Normal process", { x: 0.18, y: colY, w: colW, h: 0.4, fontSize: 10, bold: true, color: C.white, align: "center", valign: "middle" });
+  s.addShape(pptx.shapes.RECTANGLE, { x: 0.18, y: colY, w: colW, h: headerH, fill: { color: "888888" } });
+  s.addText("\u26A0  Problem of Normal process", { x: 0.18, y: colY, w: colW, h: headerH, fontSize: 10, bold: true, color: C.white, align: "center", valign: "middle" });
 
-  problems.slice(0, 8).forEach((p, pi) => {
-    s.addText("\u2717  " + toStr(p), { x: 0.28, y: colY + 0.55 + pi * 0.5, w: colW - 0.2, h: 0.45, fontSize: 9.5, color: "444444", valign: "middle" });
+  // Dynamic: limit items so they fit in available space
+  const pItemH = 0.42;
+  const maxProblems = Math.min(problems.length, 6, Math.floor(contentAreaH / pItemH));
+  const pSpacing = maxProblems > 0 ? Math.min(contentAreaH / maxProblems, 0.55) : 0.5;
+
+  problems.slice(0, maxProblems).forEach((p, pi) => {
+    s.addText("\u2717  " + toStr(p), { x: 0.28, y: contentStartY + pi * pSpacing, w: colW - 0.2, h: pItemH, fontSize: 9.5, color: "444444", valign: "middle" });
   });
 
   // Arrow 1
   s.addShape(pptx.shapes.CHEVRON, { x: 4.1, y: 3.6, w: 0.6, h: 0.65, fill: { color: C.orange }, line: { color: C.orange } });
 
-  // Col 2: Benefits (orange)
+  // === Col 2: Benefits (orange) ===
   s.addShape(pptx.shapes.RECTANGLE, { x: 4.78, y: colY, w: colW, h: colH, fill: { color: "FFF8F0" }, line: { color: "FFCCAA", pt: 1 } });
-  s.addShape(pptx.shapes.RECTANGLE, { x: 4.78, y: colY, w: colW, h: 0.4, fill: { color: C.orange } });
-  s.addText("\u2714  Benefits", { x: 4.78, y: colY, w: colW, h: 0.4, fontSize: 10, bold: true, color: C.white, align: "center", valign: "middle" });
+  s.addShape(pptx.shapes.RECTANGLE, { x: 4.78, y: colY, w: colW, h: headerH, fill: { color: C.orange } });
+  s.addText("\u2714  Benefits", { x: 4.78, y: colY, w: colW, h: headerH, fontSize: 10, bold: true, color: C.white, align: "center", valign: "middle" });
 
-  benefits.slice(0, 8).forEach((b, bi) => {
-    s.addText("\u2714  " + toStr(b), { x: 4.9, y: colY + 0.5 + bi * 0.55, w: colW - 0.2, h: 0.48, fontSize: 9.5, color: "444444", valign: "middle" });
+  const bItemH = 0.42;
+  const maxBenefits = Math.min(benefits.length, 6, Math.floor(contentAreaH / bItemH));
+  const bSpacing = maxBenefits > 0 ? Math.min(contentAreaH / maxBenefits, 0.55) : 0.5;
+
+  benefits.slice(0, maxBenefits).forEach((b, bi) => {
+    s.addText("\u2714  " + toStr(b), { x: 4.9, y: contentStartY + bi * bSpacing, w: colW - 0.2, h: bItemH, fontSize: 9.5, color: "444444", valign: "middle" });
   });
 
   // Arrow 2
   s.addShape(pptx.shapes.CHEVRON, { x: 8.7, y: 3.6, w: 0.6, h: 0.65, fill: { color: C.headerBlue }, line: { color: C.headerBlue } });
 
-  // Col 3: Use/Reduce (blue)
+  // === Col 3: Use/Reduce (blue) ===
   s.addShape(pptx.shapes.RECTANGLE, { x: 9.35, y: colY, w: colW, h: colH, fill: { color: "EEF4FF" }, line: { color: "C0D0E8", pt: 1 } });
-  s.addShape(pptx.shapes.RECTANGLE, { x: 9.35, y: colY, w: colW, h: 0.4, fill: { color: C.headerBlue } });
-  s.addText("Use / Reduce", { x: 9.35, y: colY, w: colW, h: 0.4, fontSize: 10, bold: true, color: C.white, align: "center", valign: "middle" });
+  s.addShape(pptx.shapes.RECTANGLE, { x: 9.35, y: colY, w: colW, h: headerH, fill: { color: C.headerBlue } });
+  s.addText("Use / Reduce", { x: 9.35, y: colY, w: colW, h: headerH, fontSize: 10, bold: true, color: C.white, align: "center", valign: "middle" });
 
-  reductions.slice(0, 3).forEach((r, ri) => {
-    const ry = colY + 0.6 + ri * 1.65;
+  // Reductions: limit to 3, dynamically space within available area
+  const maxRed = Math.min(reductions.length, 3);
+  const redBlockH = maxRed > 0 ? Math.min(contentAreaH / maxRed, 1.7) : 1.65;
+
+  reductions.slice(0, maxRed).forEach((r, ri) => {
+    const ry = contentStartY + ri * redBlockH;
     const value = typeof r === "string" ? r : (r.value || r.metric || r.number || toStr(r));
     const label = typeof r === "object" ? (r.label || r.title || r.name || "") : "";
     const sub = typeof r === "object" ? (r.subtitle || r.description || r.detail || "") : "";
 
-    s.addText(String(value), { x: 9.35, y: ry, w: colW, h: 0.7, fontSize: 28, bold: true, color: C.orange, align: "center" });
-    if (label) s.addText(label, { x: 9.35, y: ry + 0.68, w: colW, h: 0.42, fontSize: 10, color: C.black, align: "center" });
-    if (sub) s.addText(sub, { x: 9.35, y: ry + 1.08, w: colW, h: 0.32, fontSize: 9, color: C.gray, align: "center", italic: true });
+    s.addText(String(value), { x: 9.35, y: ry, w: colW, h: 0.6, fontSize: 26, bold: true, color: C.orange, align: "center", valign: "bottom" });
+    if (label) s.addText(label, { x: 9.35, y: ry + 0.6, w: colW, h: 0.38, fontSize: 10, color: C.black, align: "center", valign: "top" });
+    if (sub) s.addText(sub, { x: 9.35, y: ry + 0.96, w: colW, h: 0.28, fontSize: 9, color: C.gray, align: "center", italic: true, valign: "top" });
   });
 }
 
@@ -438,25 +475,35 @@ function buildOperationFlow(pptx, data, section) {
   const s = pptx.addSlide();
   addHeader(pptx, s, "Suggestion | Explaining Operation Flow", null);
 
-  s.addText("Summary operation flow", { x: 0.3, y: 1.28, w: 9, h: 0.38, fontSize: 13, bold: true, color: C.headerBlue });
-  s.addShape(pptx.shapes.LINE, { x: 0.3, y: 1.68, w: 9, h: 0, line: { color: C.headerBlue, pt: 1.5 } });
+  s.addText("Summary operation flow", { x: 0.3, y: 1.28, w: 9, h: 0.35, fontSize: 13, bold: true, color: C.headerBlue });
+  s.addShape(pptx.shapes.LINE, { x: 0.3, y: 1.65, w: 9, h: 0, line: { color: C.headerBlue, pt: 1.5 } });
 
   const items = toArray(section.content);
+  // Fit within y=1.78 to y=6.8 (5.02" total), with gap between items
   const maxItems = Math.min(items.length, 5);
-  const itemH = Math.min(1.28, 5.2 / Math.max(maxItems, 1) - 0.1);
+  const totalH = 5.02;
+  const gap = 0.12;
+  const itemH = Math.min(1.2, (totalH - (maxItems - 1) * gap) / Math.max(maxItems, 1));
+  const titleH = 0.34;
 
   items.slice(0, maxItems).forEach((f, i) => {
-    const y = 1.88 + i * (itemH + 0.1);
+    const y = 1.78 + i * (itemH + gap);
     const title = typeof f === "string" ? f : (f.title || f.name || f.t || `Step ${i+1}`);
     const desc = typeof f === "object" ? toStr(f.description || f.detail || f.d || "") : "";
 
-    s.addShape(pptx.shapes.OVAL, { x: 0.3, y: y + 0.08, w: 0.42, h: 0.42, fill: { color: C.headerBlue } });
-    s.addText(String(i+1), { x: 0.3, y: y + 0.08, w: 0.42, h: 0.42, fontSize: 13, bold: true, color: C.white, align: "center", valign: "middle" });
-    s.addText(title, { x: 0.85, y, w: 8.5, h: 0.38, fontSize: 12, bold: true, color: C.black });
-    if (desc) s.addText(desc, { x: 0.85, y: y + 0.38, w: 8.5, h: itemH - 0.38, fontSize: 10, color: C.gray, valign: "top" });
+    // Number circle aligned with title
+    s.addShape(pptx.shapes.OVAL, { x: 0.3, y: y + 0.02, w: 0.38, h: 0.38, fill: { color: C.headerBlue } });
+    s.addText(String(i+1), { x: 0.3, y: y + 0.02, w: 0.38, h: 0.38, fontSize: 12, bold: true, color: C.white, align: "center", valign: "middle" });
+    // Title
+    s.addText(title, { x: 0.82, y, w: 8.5, h: titleH, fontSize: 11.5, bold: true, color: C.black, valign: "middle" });
+    // Description: starts below title, height = remaining card space
+    if (desc) {
+      const descH = Math.max(itemH - titleH - 0.04, 0.25);
+      s.addText(desc, { x: 0.82, y: y + titleH + 0.04, w: 8.5, h: descH, fontSize: 10, color: C.gray, valign: "top" });
+    }
   });
 
-  addImageZone(pptx, s, 9.8, 1.28, 3.2, 5.85, "SCREEN FLOW");
+  addImageZone(pptx, s, 9.8, 1.28, 3.2, 5.55, "SCREEN FLOW");
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -465,27 +512,46 @@ function buildOperationFlow(pptx, data, section) {
 function buildScopeOfWork(pptx, data, section) {
   addSectionDivider(pptx, "SCOPE OF WORK", null);
 
-  const s = pptx.addSlide();
-  addHeader(pptx, s, "Scope of Work - Details", null);
-
   const items = toArray(section.content);
-  let yPos = 1.3;
+  // Split into pages if too many items (max ~6 items per page)
+  const itemsPerPage = 6;
+  const pages = [];
+  for (let p = 0; p < items.length; p += itemsPerPage) {
+    pages.push(items.slice(p, p + itemsPerPage));
+  }
+  if (pages.length === 0) pages.push([]);
 
-  items.forEach((item, i) => {
-    if (yPos > 6.2) return; // Overflow protection
-    const text = typeof item === "string" ? item : (item.title || item.name || toStr(item));
-    const desc = typeof item === "object" ? toStr(item.description || item.detail || "") : "";
+  pages.forEach((pageItems, pageIdx) => {
+    const s = pptx.addSlide();
+    const pageLabel = pages.length > 1 ? ` (${pageIdx + 1}/${pages.length})` : "";
+    addHeader(pptx, s, "Scope of Work - Details" + pageLabel, null);
 
-    s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 0.3, y: yPos, w: 0.4, h: 0.4, fill: { color: C.headerBlue }, rectRadius: 0.05 });
-    s.addText(String(i+1), { x: 0.3, y: yPos, w: 0.4, h: 0.4, fontSize: 14, bold: true, color: C.white, align: "center", valign: "middle" });
-    s.addText(text, { x: 0.85, y: yPos, w: 11.5, h: 0.4, fontSize: 13, bold: true, color: C.black, valign: "middle" });
-    yPos += 0.45;
+    let yPos = 1.3;
+    const baseIndex = pageIdx * itemsPerPage;
 
-    if (desc) {
-      s.addText(desc, { x: 0.85, y: yPos, w: 11.5, h: 0.35, fontSize: 11, color: C.gray, valign: "top" });
-      yPos += 0.4;
-    }
-    yPos += 0.15;
+    pageItems.forEach((item, i) => {
+      if (yPos > 6.3) return; // Safety limit
+      const text = typeof item === "string" ? item : (item.title || item.name || toStr(item));
+      const desc = typeof item === "object" ? toStr(item.description || item.detail || "") : "";
+
+      // Number badge
+      s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 0.3, y: yPos, w: 0.38, h: 0.38, fill: { color: C.headerBlue }, rectRadius: 0.05 });
+      s.addText(String(baseIndex + i + 1), { x: 0.3, y: yPos, w: 0.38, h: 0.38, fontSize: 13, bold: true, color: C.white, align: "center", valign: "middle" });
+      // Title
+      s.addText(text, { x: 0.82, y: yPos, w: 11.5, h: 0.38, fontSize: 12, bold: true, color: C.black, valign: "middle" });
+      yPos += 0.42;
+
+      // Description (with proper gap from title)
+      if (desc) {
+        s.addText(desc, { x: 0.82, y: yPos, w: 11.5, h: 0.32, fontSize: 10.5, color: C.gray, valign: "top" });
+        yPos += 0.36;
+      }
+      // Separator line between items
+      if (i < pageItems.length - 1) {
+        s.addShape(pptx.shapes.LINE, { x: 0.3, y: yPos + 0.06, w: 12.3, h: 0, line: { color: "E0E0E0", pt: 0.5 } });
+        yPos += 0.18;
+      }
+    });
   });
 }
 
@@ -498,22 +564,51 @@ function buildTimeline(pptx, data, section) {
 
   const phases = toArray(section.content);
   const colors = [C.headerBlue, C.teal, C.orange, C.headerBlue, C.teal, C.orange, C.green, C.navy];
+  const maxPhases = Math.min(phases.length, 8);
 
-  phases.slice(0, 8).forEach((phase, i) => {
-    const row = Math.floor(i / 4);
-    const col = i % 4;
-    const x = 0.3 + col * 3.2;
-    const y = 1.4 + row * 2.8;
+  // Dynamic layout: 1 or 2 rows depending on count
+  const cols = maxPhases <= 4 ? maxPhases : 4;
+  const rows = Math.ceil(maxPhases / cols);
+  // Calculate column width dynamically
+  const totalW = 12.7;
+  const arrowW = 0.28;
+  const colW = (totalW - (cols - 1) * arrowW) / cols;
+  // Row heights
+  const rowGap = rows > 1 ? 2.65 : 0;
+  const boxH = 0.52;
+
+  phases.slice(0, maxPhases).forEach((phase, i) => {
+    const row = Math.floor(i / cols);
+    const col = i % cols;
+    const x = 0.3 + col * (colW + arrowW);
+    const y = 1.4 + row * rowGap;
     const color = colors[i % colors.length];
     const text = typeof phase === "string" ? phase : (phase.name || phase.title || phase.phase || `Phase ${i+1}`);
-    const duration = typeof phase === "object" ? (phase.duration || phase.period || "") : "";
+    const duration = typeof phase === "object" ? toStr(phase.duration || phase.period || "") : "";
+    const tasks = typeof phase === "object" ? toArray(phase.tasks || phase.details || phase.items || []) : [];
 
-    s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x, y, w: 2.9, h: 0.55, fill: { color }, rectRadius: 0.06 });
-    s.addText(text, { x, y, w: 2.9, h: 0.55, fontSize: 11, bold: true, color: C.white, align: "center", valign: "middle" });
-    if (duration) s.addText(duration, { x, y: y + 0.6, w: 2.9, h: 0.3, fontSize: 10, color: C.gray, align: "center" });
+    // Phase box
+    s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x, y, w: colW, h: boxH, fill: { color }, rectRadius: 0.06 });
+    s.addText(text, { x, y, w: colW, h: boxH, fontSize: 10.5, bold: true, color: C.white, align: "center", valign: "middle" });
 
-    if (col < 3 && i < phases.length - 1) {
-      s.addText("\u25B6", { x: x + 2.9, y, w: 0.3, h: 0.55, fontSize: 14, color, align: "center", valign: "middle" });
+    // Duration below box
+    let detailY = y + boxH + 0.06;
+    if (duration) {
+      s.addText(duration, { x, y: detailY, w: colW, h: 0.26, fontSize: 9.5, color: C.gray, align: "center", valign: "top" });
+      detailY += 0.28;
+    }
+
+    // Task list (max 4 tasks, only show if space allows)
+    const maxTasks = rows > 1 ? 3 : 5;
+    tasks.slice(0, maxTasks).forEach((t, ti) => {
+      if (detailY > y + 2.4) return; // Overflow guard
+      s.addText("• " + toStr(t), { x: x + 0.05, y: detailY, w: colW - 0.1, h: 0.22, fontSize: 8.5, color: "555555", valign: "top" });
+      detailY += 0.24;
+    });
+
+    // Arrow between columns (not after last column in row)
+    if (col < cols - 1 && i < maxPhases - 1) {
+      s.addText("\u25B6", { x: x + colW, y, w: arrowW, h: boxH, fontSize: 13, color, align: "center", valign: "middle" });
     }
   });
 }
@@ -576,54 +671,75 @@ function buildTeamStructure(pptx, data, section) {
 // SLIDE — PRICING TABLE
 // ═══════════════════════════════════════════════════════════
 function buildPricing(pptx, data, section) {
-  const s = pptx.addSlide();
-  addHeader(pptx, s, "Pricing Estimate", null);
-
   const content = section.content;
+
+  // Simple string content
   if (typeof content === "string") {
+    const s = pptx.addSlide();
+    addHeader(pptx, s, "Pricing Estimate", null);
     s.addText(content, { x: 0.5, y: 1.4, w: 12.3, h: 5.5, fontSize: 13, color: "333333", valign: "top", lineSpacing: 22 });
     return;
   }
 
   const rows = toArray(content);
   if (rows.length === 0) {
+    const s = pptx.addSlide();
+    addHeader(pptx, s, "Pricing Estimate", null);
     s.addText(toText(content, "Pricing details to be confirmed."), { x: 0.5, y: 1.4, w: 12.3, h: 5.5, fontSize: 13, color: "333333", valign: "top" });
     return;
   }
 
-  const tableData = [[
+  // Extract total before pagination
+  const total = (typeof content === "object" && !Array.isArray(content)) ? content.total : null;
+
+  // Paginate: max 10 data rows per page (header + 10 rows + optional total = 12 × 0.45 = 5.4")
+  const rowsPerPage = 10;
+  const pages = [];
+  for (let p = 0; p < rows.length; p += rowsPerPage) {
+    pages.push(rows.slice(p, p + rowsPerPage));
+  }
+
+  const headerRow = [
     { text: "#", options: { fill: C.headerBlue, color: C.white, bold: true, fontSize: 10, align: "center" } },
     { text: "Item", options: { fill: C.headerBlue, color: C.white, bold: true, fontSize: 10 } },
     { text: "Description", options: { fill: C.headerBlue, color: C.white, bold: true, fontSize: 10 } },
     { text: "Estimate", options: { fill: C.headerBlue, color: C.white, bold: true, fontSize: 10, align: "right" } },
-  ]];
+  ];
 
-  rows.forEach((row, i) => {
-    const item = typeof row === "string" ? row : toStr(row.item || row.name || row.service || "");
-    const desc = typeof row === "object" ? toStr(row.description || row.detail || "") : "";
-    const price = typeof row === "object" ? toStr(row.price || row.estimate || row.cost || row.amount || "") : "";
-    const bg = i % 2 === 0 ? "FFFFFF" : "F5F7FA";
+  pages.forEach((pageRows, pageIdx) => {
+    const s = pptx.addSlide();
+    const pageLabel = pages.length > 1 ? ` (${pageIdx + 1}/${pages.length})` : "";
+    addHeader(pptx, s, "Pricing Estimate" + pageLabel, null);
 
-    tableData.push([
-      { text: String(i+1), options: { fill: bg, fontSize: 10, align: "center" } },
-      { text: item, options: { fill: bg, fontSize: 10 } },
-      { text: desc, options: { fill: bg, fontSize: 9, color: C.gray } },
-      { text: price, options: { fill: bg, fontSize: 10, align: "right", bold: true } },
-    ]);
+    const tableData = [headerRow];
+    const baseIndex = pageIdx * rowsPerPage;
+
+    pageRows.forEach((row, i) => {
+      const item = typeof row === "string" ? row : toStr(row.item || row.name || row.service || "");
+      const desc = typeof row === "object" ? toStr(row.description || row.detail || "") : "";
+      const price = typeof row === "object" ? toStr(row.price || row.estimate || row.cost || row.amount || "") : "";
+      const bg = (baseIndex + i) % 2 === 0 ? "FFFFFF" : "F5F7FA";
+
+      tableData.push([
+        { text: String(baseIndex + i + 1), options: { fill: bg, fontSize: 10, align: "center" } },
+        { text: item, options: { fill: bg, fontSize: 10 } },
+        { text: desc, options: { fill: bg, fontSize: 9, color: C.gray } },
+        { text: price, options: { fill: bg, fontSize: 10, align: "right", bold: true } },
+      ]);
+    });
+
+    // Total row only on the last page
+    if (total && pageIdx === pages.length - 1) {
+      tableData.push([
+        { text: "", options: { fill: C.navy } },
+        { text: "TOTAL", options: { fill: C.navy, color: C.white, bold: true, fontSize: 11 } },
+        { text: "", options: { fill: C.navy } },
+        { text: toStr(total), options: { fill: C.navy, color: C.orange, bold: true, fontSize: 12, align: "right" } },
+      ]);
+    }
+
+    s.addTable(tableData, { x: 0.3, y: 1.4, w: 12.7, border: { pt: 0.5, color: "CCCCCC" }, colW: [0.6, 3.5, 5.5, 3.1], rowH: 0.45 });
   });
-
-  // Total row
-  const total = (typeof content === "object" && !Array.isArray(content)) ? content.total : null;
-  if (total) {
-    tableData.push([
-      { text: "", options: { fill: C.navy } },
-      { text: "TOTAL", options: { fill: C.navy, color: C.white, bold: true, fontSize: 11 } },
-      { text: "", options: { fill: C.navy } },
-      { text: toStr(total), options: { fill: C.navy, color: C.orange, bold: true, fontSize: 12, align: "right" } },
-    ]);
-  }
-
-  s.addTable(tableData, { x: 0.3, y: 1.4, w: 12.7, border: { pt: 0.5, color: "CCCCCC" }, colW: [0.6, 3.5, 5.5, 3.1], rowH: 0.45 });
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -644,71 +760,101 @@ function buildTerms(pptx, data, section) {
 // SLIDE — MAINTENANCE / SLA TABLE
 // ═══════════════════════════════════════════════════════════
 function buildMaintenance(pptx, data, section) {
-  const s = pptx.addSlide();
-  addHeader(pptx, s, "System Maintenance & Support", null);
-
   const items = toArray(section.content);
   if (items.length === 0) {
+    const s = pptx.addSlide();
+    addHeader(pptx, s, "System Maintenance & Support", null);
     s.addText(toText(section.content, "Maintenance details to be confirmed."), {
       x: 0.5, y: 1.4, w: 12.3, h: 5.5, fontSize: 12, color: "333333", valign: "top", lineSpacing: 20,
     });
     return;
   }
 
-  const tableData = [[
+  // Split into pages: max 10 data rows per page (header row + 10 = 11 rows × 0.45 = 4.95")
+  const rowsPerPage = 10;
+  const pages = [];
+  for (let p = 0; p < items.length; p += rowsPerPage) {
+    pages.push(items.slice(p, p + rowsPerPage));
+  }
+
+  const headerRow = [
     { text: "Item", options: { fill: C.headerBlue, color: C.white, bold: true, fontSize: 10 } },
     { text: "Year 1", options: { fill: C.headerBlue, color: C.white, bold: true, fontSize: 10, align: "center" } },
     { text: "Year 2+", options: { fill: C.headerBlue, color: C.white, bold: true, fontSize: 10, align: "center" } },
     { text: "Notes", options: { fill: C.headerBlue, color: C.white, bold: true, fontSize: 10 } },
-  ]];
+  ];
 
-  items.forEach((item, i) => {
-    const name = typeof item === "string" ? item : toStr(item.name || item.item || item.service || "");
-    const y1 = typeof item === "object" ? toStr(item.year1 || item.warranty || "Included") : "";
-    const y2 = typeof item === "object" ? toStr(item.year2 || item.renewal || "") : "";
-    const notes = typeof item === "object" ? toStr(item.notes || item.description || "") : "";
-    const bg = i % 2 === 0 ? "FFFFFF" : "F5F7FA";
+  pages.forEach((pageItems, pageIdx) => {
+    const s = pptx.addSlide();
+    const pageLabel = pages.length > 1 ? ` (${pageIdx + 1}/${pages.length})` : "";
+    addHeader(pptx, s, "System Maintenance & Support" + pageLabel, null);
 
-    tableData.push([
-      { text: name, options: { fill: bg, fontSize: 10 } },
-      { text: y1, options: { fill: bg, fontSize: 10, align: "center" } },
-      { text: y2, options: { fill: bg, fontSize: 10, align: "center" } },
-      { text: notes, options: { fill: bg, fontSize: 9, color: C.gray } },
-    ]);
+    const tableData = [headerRow];
+    const baseIndex = pageIdx * rowsPerPage;
+
+    pageItems.forEach((item, i) => {
+      const name = typeof item === "string" ? item : toStr(item.name || item.item || item.service || "");
+      const y1 = typeof item === "object" ? toStr(item.year1 || item.warranty || "Included") : "";
+      const y2 = typeof item === "object" ? toStr(item.year2 || item.renewal || "") : "";
+      const notes = typeof item === "object" ? toStr(item.notes || item.description || "") : "";
+      const bg = (baseIndex + i) % 2 === 0 ? "FFFFFF" : "F5F7FA";
+
+      tableData.push([
+        { text: name, options: { fill: bg, fontSize: 10 } },
+        { text: y1, options: { fill: bg, fontSize: 10, align: "center" } },
+        { text: y2, options: { fill: bg, fontSize: 10, align: "center" } },
+        { text: notes, options: { fill: bg, fontSize: 9, color: C.gray } },
+      ]);
+    });
+
+    s.addTable(tableData, { x: 0.3, y: 1.4, w: 12.7, border: { pt: 0.5, color: "CCCCCC" }, colW: [4.0, 2.5, 2.5, 3.7], rowH: 0.45 });
   });
-
-  s.addTable(tableData, { x: 0.3, y: 1.4, w: 12.7, border: { pt: 0.5, color: "CCCCCC" }, colW: [4.0, 2.5, 2.5, 3.7], rowH: 0.45 });
 }
 
 // ═══════════════════════════════════════════════════════════
 // SLIDE — FUNCTION LIST TABLE
 // ═══════════════════════════════════════════════════════════
 function buildFunctionList(pptx, data, section) {
-  const s = pptx.addSlide();
-  addHeader(pptx, s, "Function List", null);
-
   const funcs = toArray(section.content);
-  const tableData = [[
+
+  // Paginate: max 12 data rows per page (header + 12 × 0.38 = 4.56" + header row = safe)
+  const rowsPerPage = 12;
+  const pages = [];
+  for (let p = 0; p < funcs.length; p += rowsPerPage) {
+    pages.push(funcs.slice(p, p + rowsPerPage));
+  }
+  if (pages.length === 0) pages.push([]);
+
+  const headerRow = [
     { text: "#", options: { fill: C.headerBlue, color: C.white, bold: true, fontSize: 10, align: "center" } },
     { text: "Category", options: { fill: C.headerBlue, color: C.white, bold: true, fontSize: 10 } },
     { text: "Function", options: { fill: C.headerBlue, color: C.white, bold: true, fontSize: 10 } },
     { text: "Description", options: { fill: C.headerBlue, color: C.white, bold: true, fontSize: 10 } },
-  ]];
+  ];
 
-  funcs.slice(0, 15).forEach((fn, i) => {
-    const cat = typeof fn === "object" ? toStr(fn.category || fn.module || "") : "";
-    const name = typeof fn === "string" ? fn : toStr(fn.name || fn.function_name || fn.title || "");
-    const desc = typeof fn === "object" ? toStr(fn.description || fn.detail || "") : "";
-    const bg = i % 2 === 0 ? "FFFFFF" : "F5F7FA";
-    tableData.push([
-      { text: String(i+1), options: { fill: bg, fontSize: 9, align: "center" } },
-      { text: cat, options: { fill: bg, fontSize: 9 } },
-      { text: name, options: { fill: bg, fontSize: 9, bold: true } },
-      { text: desc, options: { fill: bg, fontSize: 9, color: C.gray } },
-    ]);
+  pages.forEach((pageFuncs, pageIdx) => {
+    const s = pptx.addSlide();
+    const pageLabel = pages.length > 1 ? ` (${pageIdx + 1}/${pages.length})` : "";
+    addHeader(pptx, s, "Function List" + pageLabel, null);
+
+    const tableData = [headerRow];
+    const baseIndex = pageIdx * rowsPerPage;
+
+    pageFuncs.forEach((fn, i) => {
+      const cat = typeof fn === "object" ? toStr(fn.category || fn.module || "") : "";
+      const name = typeof fn === "string" ? fn : toStr(fn.name || fn.function_name || fn.title || "");
+      const desc = typeof fn === "object" ? toStr(fn.description || fn.detail || "") : "";
+      const bg = (baseIndex + i) % 2 === 0 ? "FFFFFF" : "F5F7FA";
+      tableData.push([
+        { text: String(baseIndex + i + 1), options: { fill: bg, fontSize: 9, align: "center" } },
+        { text: cat, options: { fill: bg, fontSize: 9 } },
+        { text: name, options: { fill: bg, fontSize: 9, bold: true } },
+        { text: desc, options: { fill: bg, fontSize: 9, color: C.gray } },
+      ]);
+    });
+
+    s.addTable(tableData, { x: 0.3, y: 1.4, w: 12.7, border: { pt: 0.5, color: "CCCCCC" }, colW: [0.5, 2.5, 3.5, 6.2], rowH: 0.38 });
   });
-
-  s.addTable(tableData, { x: 0.3, y: 1.4, w: 12.7, border: { pt: 0.5, color: "CCCCCC" }, colW: [0.5, 2.5, 3.5, 6.2], rowH: 0.38 });
 }
 
 // ═══════════════════════════════════════════════════════════
