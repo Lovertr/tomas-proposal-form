@@ -202,47 +202,54 @@ function buildProjectPurpose(pptx, data, section) {
   // --- Main description text ---
   let yPos = 1.25;
   if (mainText) {
-    // Use autoFit to handle long text gracefully
-    s.addText(mainText, { x: 0.3, y: yPos, w: 12.7, h: 0.75, fontSize: 11, color: C.black, valign: "top", shrinkText: true });
-    yPos += 0.85;
+    s.addText(mainText, { x: 0.3, y: yPos, w: 12.7, h: 0.65, fontSize: 10.5, color: C.black, valign: "top", shrinkText: true });
+    yPos += 0.72;
   }
 
-  // --- Objectives (numbered, with proper spacing) ---
-  const maxObj = steps.length > 0 ? 3 : 5;
+  // --- Objectives (numbered, in a clean table-like layout) ---
+  const maxObj = steps.length > 0 ? 4 : 6;
   const objCount = Math.min(objectives.length, maxObj);
-  // Dynamic row height based on count and remaining space
-  const objRowH = steps.length > 0 ? 0.65 : 0.75;
+  // Calculate available space: from yPos to chevron area (or footer)
+  const chevronAreaY = steps.length > 0 ? 5.6 : 6.8; // push chevrons to bottom
+  const availableForObj = chevronAreaY - yPos - 0.3;
+  const objRowH = Math.min(0.7, availableForObj / Math.max(objCount, 1));
 
   objectives.slice(0, objCount).forEach((o, i) => {
-    // Number badge
-    s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 0.35, y: yPos + i * objRowH + 0.05, w: 0.32, h: 0.32, fill: { color: C.headerBlue }, rectRadius: 0.04 });
-    s.addText(String(i + 1), { x: 0.35, y: yPos + i * objRowH + 0.05, w: 0.32, h: 0.32, fontSize: 11, bold: true, color: C.white, align: "center", valign: "middle" });
-    // Objective text with shrinkText to prevent overflow
-    s.addText(toStr(o), {
-      x: 0.78, y: yPos + i * objRowH, w: 11.7, h: objRowH - 0.08,
-      fontSize: 11, color: C.black, valign: "middle", shrinkText: true,
-    });
-    // Light separator line
-    if (i < objCount - 1) {
-      s.addShape(pptx.shapes.LINE, { x: 0.78, y: yPos + (i + 1) * objRowH - 0.02, w: 11.5, h: 0, line: { color: "E8E8E8", pt: 0.5 } });
+    const rowY = yPos + i * objRowH;
+    // Alternating row background for readability
+    if (i % 2 === 0) {
+      s.addShape(pptx.shapes.RECTANGLE, { x: 0.3, y: rowY, w: 12.7, h: objRowH - 0.04, fill: { color: "F5F8FC" } });
     }
+    // Number badge
+    s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 0.4, y: rowY + (objRowH - 0.36) / 2, w: 0.36, h: 0.36, fill: { color: C.headerBlue }, rectRadius: 0.05 });
+    s.addText(String(i + 1), { x: 0.4, y: rowY + (objRowH - 0.36) / 2, w: 0.36, h: 0.36, fontSize: 12, bold: true, color: C.white, align: "center", valign: "middle" });
+    // Objective text
+    s.addText(toStr(o), {
+      x: 0.9, y: rowY, w: 11.8, h: objRowH - 0.04,
+      fontSize: 10.5, color: C.black, valign: "middle", shrinkText: true,
+    });
   });
-  yPos += objCount * objRowH + 0.25;
+  yPos += objCount * objRowH + 0.15;
 
-  // --- Process Flow chevrons ---
+  // --- Process Flow chevrons (pushed to bottom area with more space) ---
   if (steps.length > 0) {
-    const flowY = Math.min(yPos, 5.5);
+    const flowY = Math.max(yPos + 0.1, 5.6);
+    // Sub-header
+    s.addText("Process Flow", { x: 0.3, y: flowY - 0.35, w: 3, h: 0.3, fontSize: 9, bold: true, color: C.headerBlue });
+    s.addShape(pptx.shapes.LINE, { x: 0.3, y: flowY - 0.06, w: 12.7, h: 0, line: { color: C.headerBlue, pt: 1 } });
+
     const flowColors = [C.headerBlue, C.teal, C.headerBlue, C.teal, C.orange, C.orange];
     const maxSteps = Math.min(steps.length, 6);
-    const stepW = Math.min(1.92, 12.4 / maxSteps - 0.18);
+    const stepW = Math.min(2.0, 12.4 / maxSteps - 0.12);
+    const chevronH = 0.78;
 
     steps.slice(0, maxSteps).forEach((st, i) => {
       const text = typeof st === "string" ? st : st.name || st.title || st.t || `Step ${i+1}`;
       const col = (typeof st === "object" && st.color) ? st.color : flowColors[i % flowColors.length];
-      const x = 0.3 + i * (stepW + 0.18);
+      const x = 0.3 + i * (stepW + 0.12);
 
-      s.addShape(pptx.shapes.CHEVRON, { x, y: flowY, w: stepW, h: 0.88, fill: { color: col }, line: { color: col } });
-      s.addText(text, { x: x + 0.15, y: flowY, w: stepW - 0.3, h: 0.88, fontSize: 9.5, bold: true, color: C.white, align: "center", valign: "middle", shrinkText: true });
+      s.addShape(pptx.shapes.CHEVRON, { x, y: flowY, w: stepW, h: chevronH, fill: { color: col }, line: { color: col } });
+      s.addText(text, { x: x + 0.12, y: flowY, w: stepW - 0.24, h: chevronH, fontSize: 8.5, bold: true, color: C.white, align: "center", valign: "middle", shrinkText: true });
     });
   }
 }
@@ -513,10 +520,11 @@ function buildOperationFlow(pptx, data, section) {
     s.addText(title, { x: x + 0.15, y: 1.78, w: chevronW - 0.3, h: 0.55, fontSize: 8.5, bold: true, color: C.white, align: "center", valign: "middle", shrinkText: true });
   });
 
-  // Summary list below
+  // Summary list below — use table layout to prevent overlap
   const listStartY = 2.55;
-  const totalH = 4.25;
-  const itemH = Math.min(1.0, totalH / Math.max(maxItems, 1));
+  const footerY = 6.95;
+  const totalH = footerY - listStartY - 0.15;
+  const itemH = Math.min(1.05, totalH / Math.max(maxItems, 1));
 
   items.slice(0, maxItems).forEach((f, i) => {
     const y = listStartY + i * itemH;
@@ -524,15 +532,28 @@ function buildOperationFlow(pptx, data, section) {
     const desc = typeof f === "object" ? toStr(f.description || f.detail || f.d || "") : "";
     const col = flowColors[i % flowColors.length];
 
-    s.addShape(pptx.shapes.OVAL, { x: 0.3, y: y + 0.03, w: 0.35, h: 0.35, fill: { color: col } });
-    s.addText(String(i+1), { x: 0.3, y: y + 0.03, w: 0.35, h: 0.35, fontSize: 11, bold: true, color: C.white, align: "center", valign: "middle" });
-    s.addText(title, { x: 0.78, y, w: 8.5, h: 0.32, fontSize: 11, bold: true, color: C.black, valign: "middle" });
-    if (desc && itemH > 0.5) {
-      s.addText(desc, { x: 0.78, y: y + 0.33, w: 8.5, h: itemH - 0.38, fontSize: 9, color: C.gray, valign: "top", shrinkText: true });
+    // Alternating row background
+    if (i % 2 === 0) {
+      s.addShape(pptx.shapes.RECTANGLE, { x: 0.3, y, w: 12.7, h: itemH - 0.04, fill: { color: "F5F8FC" } });
+    }
+
+    // Number circle
+    s.addShape(pptx.shapes.OVAL, { x: 0.35, y: y + 0.08, w: 0.32, h: 0.32, fill: { color: col } });
+    s.addText(String(i+1), { x: 0.35, y: y + 0.08, w: 0.32, h: 0.32, fontSize: 10, bold: true, color: C.white, align: "center", valign: "middle" });
+
+    // Title — shrinkText to prevent overflow
+    const titleH = 0.30;
+    s.addText(title, { x: 0.78, y: y + 0.04, w: 12.0, h: titleH, fontSize: 10.5, bold: true, color: C.black, valign: "middle", shrinkText: true });
+
+    // Description below title
+    if (desc) {
+      const descY = y + titleH + 0.06;
+      const descH = itemH - titleH - 0.14;
+      if (descH > 0.15) {
+        s.addText(desc, { x: 0.78, y: descY, w: 12.0, h: descH, fontSize: 9, color: C.gray, valign: "top", shrinkText: true });
+      }
     }
   });
-
-  addImageZone(pptx, s, 9.8, 2.55, 3.2, 4.25, "FLOW DIAGRAM");
 
   // ──────── PAGE 2+: Individual detail pages per step ────────
   items.slice(0, maxItems).forEach((f, i) => {
@@ -586,44 +607,48 @@ function buildScopeOfWork(pptx, data, section) {
   addSectionDivider(pptx, "SCOPE OF WORK", null);
 
   const items = toArray(section.content);
-  // Split into pages if too many items (max ~6 items per page)
-  const itemsPerPage = 6;
+  const rowsPerPage = 6;
   const pages = [];
-  for (let p = 0; p < items.length; p += itemsPerPage) {
-    pages.push(items.slice(p, p + itemsPerPage));
+  for (let p = 0; p < items.length; p += rowsPerPage) {
+    pages.push(items.slice(p, p + rowsPerPage));
   }
   if (pages.length === 0) pages.push([]);
 
   pages.forEach((pageItems, pageIdx) => {
     const s = pptx.addSlide();
     const pageLabel = pages.length > 1 ? ` (${pageIdx + 1}/${pages.length})` : "";
-    addHeader(pptx, s, "Scope of Work - Details" + pageLabel, null);
+    addHeader(pptx, s, "Scope of Work — Detail" + pageLabel, null);
 
-    let yPos = 1.3;
-    const baseIndex = pageIdx * itemsPerPage;
+    const baseIndex = pageIdx * rowsPerPage;
 
-    pageItems.forEach((item, i) => {
-      if (yPos > 6.3) return; // Safety limit
+    // Build table rows: Header + data rows
+    const headerRow = [
+      { text: "#", options: { bold: true, fontSize: 10, color: C.white, fill: { color: C.headerBlue }, align: "center", valign: "middle" } },
+      { text: "Phase / Activity", options: { bold: true, fontSize: 10, color: C.white, fill: { color: C.headerBlue }, valign: "middle" } },
+      { text: "Description", options: { bold: true, fontSize: 10, color: C.white, fill: { color: C.headerBlue }, valign: "middle" } }
+    ];
+
+    const dataRows = pageItems.map((item, i) => {
       const text = typeof item === "string" ? item : (item.title || item.name || toStr(item));
       const desc = typeof item === "object" ? toStr(item.description || item.detail || "") : "";
+      const rowFill = i % 2 === 0 ? "F5F8FC" : "FFFFFF";
+      return [
+        { text: String(baseIndex + i + 1), options: { fontSize: 10, bold: true, color: C.headerBlue, fill: { color: rowFill }, align: "center", valign: "middle" } },
+        { text, options: { fontSize: 10, bold: true, color: C.black, fill: { color: rowFill }, valign: "middle" } },
+        { text: desc, options: { fontSize: 9.5, color: "444444", fill: { color: rowFill }, valign: "top" } }
+      ];
+    });
 
-      // Number badge
-      s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 0.3, y: yPos, w: 0.38, h: 0.38, fill: { color: C.headerBlue }, rectRadius: 0.05 });
-      s.addText(String(baseIndex + i + 1), { x: 0.3, y: yPos, w: 0.38, h: 0.38, fontSize: 13, bold: true, color: C.white, align: "center", valign: "middle" });
-      // Title
-      s.addText(text, { x: 0.82, y: yPos, w: 11.5, h: 0.38, fontSize: 12, bold: true, color: C.black, valign: "middle" });
-      yPos += 0.42;
+    const tableRows = [headerRow, ...dataRows];
+    const availH = 5.5;
+    const rowH = Math.min(0.85, availH / tableRows.length);
 
-      // Description (with proper gap from title)
-      if (desc) {
-        s.addText(desc, { x: 0.82, y: yPos, w: 11.5, h: 0.32, fontSize: 10.5, color: C.gray, valign: "top" });
-        yPos += 0.36;
-      }
-      // Separator line between items
-      if (i < pageItems.length - 1) {
-        s.addShape(pptx.shapes.LINE, { x: 0.3, y: yPos + 0.06, w: 12.3, h: 0, line: { color: "E0E0E0", pt: 0.5 } });
-        yPos += 0.18;
-      }
+    s.addTable(tableRows, {
+      x: 0.3, y: 1.3, w: 12.7,
+      rowH,
+      colW: [0.55, 3.2, 8.95],
+      border: { type: "solid", pt: 0.5, color: "D0D0D0" },
+      autoPage: false,
     });
   });
 }
@@ -642,46 +667,68 @@ function buildTimeline(pptx, data, section) {
   // Dynamic layout: 1 or 2 rows depending on count
   const cols = maxPhases <= 4 ? maxPhases : 4;
   const rows = Math.ceil(maxPhases / cols);
+
   // Calculate column width dynamically
   const totalW = 12.7;
-  const arrowW = 0.28;
+  const arrowW = 0.30;
   const colW = (totalW - (cols - 1) * arrowW) / cols;
-  // Row heights
-  const rowGap = rows > 1 ? 2.65 : 0;
-  const boxH = 0.52;
+
+  // Use full available height (header ends ~1.15, footer ~7.0)
+  const startY = 1.35;
+  const endY = 6.85;
+  const totalAvailH = endY - startY;
+  const boxH = 0.72; // Larger phase boxes
+
+  // Row spacing — fill the page evenly
+  let rowH, rowGap;
+  if (rows === 1) {
+    rowH = totalAvailH;
+    rowGap = 0;
+  } else {
+    rowH = totalAvailH / rows;
+    rowGap = rowH;
+  }
 
   phases.slice(0, maxPhases).forEach((phase, i) => {
     const row = Math.floor(i / cols);
     const col = i % cols;
     const x = 0.3 + col * (colW + arrowW);
-    const y = 1.4 + row * rowGap;
+    const y = startY + row * rowGap;
     const color = colors[i % colors.length];
     const text = typeof phase === "string" ? phase : (phase.name || phase.title || phase.phase || `Phase ${i+1}`);
     const duration = typeof phase === "object" ? toStr(phase.duration || phase.period || "") : "";
     const tasks = typeof phase === "object" ? toArray(phase.tasks || phase.details || phase.items || []) : [];
 
-    // Phase box
-    s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x, y, w: colW, h: boxH, fill: { color }, rectRadius: 0.06 });
-    s.addText(text, { x, y, w: colW, h: boxH, fontSize: 10.5, bold: true, color: C.white, align: "center", valign: "middle" });
+    // Phase box (larger, more prominent)
+    s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x, y, w: colW, h: boxH, fill: { color }, rectRadius: 0.08 });
+    s.addText(text, { x, y, w: colW, h: boxH, fontSize: 11.5, bold: true, color: C.white, align: "center", valign: "middle", shrinkText: true });
 
-    // Duration below box
-    let detailY = y + boxH + 0.06;
+    // Duration below box (slightly bigger)
+    let detailY = y + boxH + 0.08;
     if (duration) {
-      s.addText(duration, { x, y: detailY, w: colW, h: 0.26, fontSize: 9.5, color: C.gray, align: "center", valign: "top" });
-      detailY += 0.28;
+      s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: x + 0.15, y: detailY, w: colW - 0.3, h: 0.30, fill: { color: "F0F4F8" }, rectRadius: 0.04 });
+      s.addText(duration, { x: x + 0.15, y: detailY, w: colW - 0.3, h: 0.30, fontSize: 9.5, bold: true, color, align: "center", valign: "middle" });
+      detailY += 0.38;
     }
 
-    // Task list (max 4 tasks, only show if space allows)
-    const maxTasks = rows > 1 ? 3 : 5;
+    // Task list — fill remaining space in the row
+    const rowBottom = y + rowH - 0.1;
+    const maxTasks = rows > 1 ? 4 : 6;
     tasks.slice(0, maxTasks).forEach((t, ti) => {
-      if (detailY > y + 2.4) return; // Overflow guard
-      s.addText("• " + toStr(t), { x: x + 0.05, y: detailY, w: colW - 0.1, h: 0.22, fontSize: 8.5, color: "555555", valign: "top" });
-      detailY += 0.24;
+      if (detailY > rowBottom) return;
+      s.addText("•  " + toStr(t), { x: x + 0.08, y: detailY, w: colW - 0.16, h: 0.24, fontSize: 9, color: "555555", valign: "top", shrinkText: true });
+      detailY += 0.26;
     });
 
     // Arrow between columns (not after last column in row)
     if (col < cols - 1 && i < maxPhases - 1) {
-      s.addText("\u25B6", { x: x + colW, y, w: arrowW, h: boxH, fontSize: 13, color, align: "center", valign: "middle" });
+      s.addText("\u25B6", { x: x + colW, y: y + 0.05, w: arrowW, h: boxH - 0.1, fontSize: 14, color, align: "center", valign: "middle" });
+    }
+
+    // Row connector arrow (last item of row 1 → first item of row 2)
+    if (rows > 1 && i === cols - 1 && maxPhases > cols) {
+      const arrowY = y + boxH + 0.08;
+      s.addText("\u25BC", { x: totalW / 2 - 0.1, y: arrowY, w: 0.5, h: rowGap - boxH - 0.2, fontSize: 16, color: C.headerBlue, align: "center", valign: "middle" });
     }
   });
 }
