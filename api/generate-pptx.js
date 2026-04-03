@@ -816,16 +816,91 @@ function buildPricing(pptx, data, section) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// SLIDE — TERMS & CONDITIONS
+// SLIDE — TERMS & CONDITIONS (TABLE FORMAT)
 // ═══════════════════════════════════════════════════════════
 function buildTerms(pptx, data, section) {
-  const s = pptx.addSlide();
-  addHeader(pptx, s, "Terms & Conditions", null);
+  const content = section.content;
 
-  // Convert ANY content shape to readable text
-  const text = toText(section.content, "Terms to be confirmed.");
-  s.addText(text.substring(0, 3000), {
-    x: 0.5, y: 1.4, w: 12.3, h: 5.5, fontSize: 12, color: "333333", valign: "top", lineSpacing: 20, paraSpaceAfter: 6,
+  // Extract terms as array of {title, detail} pairs
+  let terms = [];
+  if (Array.isArray(content)) {
+    terms = content.map((item, i) => {
+      if (typeof item === "string") return { title: `Item ${i+1}`, detail: item };
+      return {
+        title: toStr(item.title || item.name || item.term || item.item || `Item ${i+1}`),
+        detail: toStr(item.detail || item.description || item.content || item.value || item.condition || ""),
+      };
+    });
+  } else if (typeof content === "object" && content) {
+    // Object format: { "Payment": "50/50", "Warranty": "1 year", ... }
+    // Or nested with arrays
+    const arr = toArray(content);
+    if (arr.length > 0) {
+      terms = arr.map((item, i) => {
+        if (typeof item === "string") return { title: `Item ${i+1}`, detail: item };
+        return {
+          title: toStr(item.title || item.name || item.term || item.item || `Item ${i+1}`),
+          detail: toStr(item.detail || item.description || item.content || item.value || item.condition || ""),
+        };
+      });
+    } else {
+      // Direct key-value pairs
+      for (const [k, v] of Object.entries(content)) {
+        terms.push({ title: k, detail: toStr(v) });
+      }
+    }
+  } else if (typeof content === "string") {
+    // Try to parse lines as terms
+    const lines = content.split("\n").filter(l => l.trim());
+    terms = lines.map((line, i) => {
+      const colonIdx = line.indexOf(":");
+      if (colonIdx > 0 && colonIdx < 50) {
+        return { title: line.substring(0, colonIdx).replace(/^\d+[\.\)]\s*/, "").trim(), detail: line.substring(colonIdx + 1).trim() };
+      }
+      return { title: `Item ${i+1}`, detail: line.replace(/^\d+[\.\)]\s*/, "").trim() };
+    });
+  }
+
+  if (terms.length === 0) {
+    terms = [{ title: "Terms", detail: "To be confirmed." }];
+  }
+
+  // Paginate: max 8 terms per page
+  const termsPerPage = 8;
+  const pages = [];
+  for (let p = 0; p < terms.length; p += termsPerPage) {
+    pages.push(terms.slice(p, p + termsPerPage));
+  }
+
+  const headerRow = [
+    { text: "#", options: { fill: C.headerBlue, color: C.white, bold: true, fontSize: 10, align: "center" } },
+    { text: "Item", options: { fill: C.headerBlue, color: C.white, bold: true, fontSize: 10 } },
+    { text: "Details", options: { fill: C.headerBlue, color: C.white, bold: true, fontSize: 10 } },
+  ];
+
+  pages.forEach((pageTerms, pageIdx) => {
+    const s = pptx.addSlide();
+    const pageLabel = pages.length > 1 ? ` (${pageIdx + 1}/${pages.length})` : "";
+    addHeader(pptx, s, "Terms & Conditions" + pageLabel, null);
+
+    const tableData = [headerRow];
+    const baseIndex = pageIdx * termsPerPage;
+
+    pageTerms.forEach((term, i) => {
+      const bg = (baseIndex + i) % 2 === 0 ? "FFFFFF" : "F5F7FA";
+      tableData.push([
+        { text: String(baseIndex + i + 1), options: { fill: bg, fontSize: 10, align: "center" } },
+        { text: term.title, options: { fill: bg, fontSize: 10, bold: true } },
+        { text: term.detail, options: { fill: bg, fontSize: 10, color: "333333" } },
+      ]);
+    });
+
+    s.addTable(tableData, {
+      x: 0.3, y: 1.4, w: 12.7,
+      border: { pt: 0.5, color: "CCCCCC" },
+      colW: [0.6, 3.2, 8.9],
+      rowH: 0.55,
+    });
   });
 }
 
