@@ -1266,11 +1266,23 @@ async function generatePPTX(proposalData) {
 // ═══════════════════════════════════════════════════════════
 // API Handler
 // ═══════════════════════════════════════════════════════════
+// Store last debug info in memory for GET /api/generate-pptx?debug=1
+let _lastDebugInfo = null;
+
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.status(200).end();
+
+  // GET: return last debug info
+  if (req.method === "GET") {
+    if (req.query.debug) {
+      return res.status(200).json({ last_debug: _lastDebugInfo || "No debug info yet. Generate a proposal first." });
+    }
+    return res.status(200).json({ status: "ok", endpoint: "POST /api/generate-pptx" });
+  }
+
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
@@ -1340,7 +1352,32 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    console.log("[PPTX] Final data type:", typeof proposalData, "has sections:", !!(proposalData && proposalData.sections), "section count:", proposalData?.sections?.length || 0);
+    // ── Build debug info ──
+    const debugInfo = {
+      data_type: typeof proposalData,
+      has_sections: !!(proposalData && proposalData.sections),
+      section_count: proposalData?.sections?.length || 0,
+      data_keys: typeof proposalData === "object" ? Object.keys(proposalData) : [],
+      content_preview: typeof proposalData === "string" ? proposalData.substring(0, 300) : null,
+      proposal_title: proposalData?.proposal_title || null,
+      input_keys: Object.keys(input),
+      proposal_content_type: typeof input.proposal_content,
+      proposal_content_length: typeof input.proposal_content === "string" ? input.proposal_content.length : null,
+      proposal_content_preview: typeof input.proposal_content === "string" ? input.proposal_content.substring(0, 500) : null,
+    };
+    console.log("[PPTX] Debug info:", JSON.stringify(debugInfo));
+    _lastDebugInfo = debugInfo;
+
+    // ── Save raw input to Supabase for debugging ──
+    if (SUPABASE_KEY && debugInfo.section_count === 0) {
+      try {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+        const debugFilename = `debug/raw_input_${Date.now()}.json`;
+        const debugContent = JSON.stringify({ input, debugInfo, parsedData: typeof proposalData === "string" ? proposalData.substring(0, 5000) : proposalData }, null, 2);
+        await supabase.storage.from("proposals").upload(debugFilename, Buffer.from(debugContent), { contentType: "application/json", upsert: true });
+        console.log("[PPTX] Saved debug file:", debugFilename);
+      } catch (e) { console.error("[PPTX] Debug save error:", e.message); }
+    }
 
     const requestId = input.request_id;
     const clientName = input.client_name || (typeof proposalData === "object" ? proposalData.client_name : null);
@@ -1372,7 +1409,7 @@ module.exports = async function handler(req, res) {
           await supabase.from("proposal_requests").update({ pptx_url: urlData.publicUrl, status: "completed" }).eq("id", requestId);
         }
 
-        return res.status(200).json({ success: true, filename, pptx_url: urlData.publicUrl, request_id: requestId || null });
+        return res.status(200).json({ success: true, filename, pptx_url: urlData.publicUrl, request_id: requestId || null, debug: debugInfo });
       } catch (storageError) {
         console.error("Storage error:", storageError);
       }
