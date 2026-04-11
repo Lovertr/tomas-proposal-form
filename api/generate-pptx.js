@@ -100,22 +100,44 @@ function toText(content, fallback) {
 function extractJSON(str) {
   if (!str || typeof str !== "string") return null;
 
-  // Step 0: Convert literal escape sequences to real characters
-  // n8n often sends literal \n (two chars: backslash + n) instead of actual newlines
-  if (str.indexOf("\\n") !== -1 && str.indexOf("\n") === -1) {
-    console.log("[PPTX] extractJSON: converting literal \\n to real newlines");
-    str = str.replace(/\\n/g, "\n").replace(/\\t/g, "\t");
-  }
-  // Also handle case where BOTH literal and real newlines exist
-  else if (str.indexOf("\\n") !== -1) {
-    console.log("[PPTX] extractJSON: found mixed literal \\n, converting");
-    str = str.replace(/\\n/g, "\n").replace(/\\t/g, "\t");
+  // ── DIAGNOSTIC: Character-level analysis ──
+  const first30codes = [];
+  for (let i = 0; i < Math.min(30, str.length); i++) first30codes.push(str.charCodeAt(i));
+  const hasRealNewlines = str.includes("\n");
+  const hasLiteralBackslashN = str.includes("\\n");
+  const startsWithQuote = str.charAt(0) === '"';
+  console.log("[PPTX] extractJSON DIAG: len=" + str.length + " realNL=" + hasRealNewlines + " litBSN=" + hasLiteralBackslashN + " startsQuote=" + startsWithQuote);
+  console.log("[PPTX] extractJSON DIAG first30codes:", JSON.stringify(first30codes));
+  console.log("[PPTX] extractJSON DIAG first100:", JSON.stringify(str.substring(0, 100)));
+  console.log("[PPTX] extractJSON DIAG last50:", JSON.stringify(str.substring(str.length - 50)));
+
+  // ── Method 0: Double-stringified JSON (n8n often wraps strings in extra quotes) ──
+  if (startsWithQuote) {
+    try {
+      const unwrapped = JSON.parse(str);
+      if (typeof unwrapped === "string") {
+        console.log("[PPTX] extractJSON: unwrapped double-stringified, recursing...");
+        return extractJSON(unwrapped);
+      } else if (typeof unwrapped === "object" && unwrapped !== null) {
+        console.log("[PPTX] extractJSON: direct JSON.parse of quoted string returned object");
+        return unwrapped;
+      }
+    } catch (e) {
+      console.log("[PPTX] extractJSON: not double-stringified:", e.message.substring(0, 80));
+    }
   }
 
-  // Method 1: Remove markdown code fences line-by-line (most reliable)
+  // ── Step 0a: Convert literal escape sequences to real characters ──
+  if (hasLiteralBackslashN) {
+    console.log("[PPTX] extractJSON: converting literal \\n to real newlines");
+    str = str.replace(/\\n/g, "\n").replace(/\\t/g, "\t").replace(/\\r/g, "\r");
+  }
+
+  // ── Method 1: Remove markdown code fences line-by-line ──
   let cleaned = str;
   const lines = cleaned.split("\n");
-  if (lines[0].trim().match(/^```/)) lines.shift();
+  console.log("[PPTX] extractJSON: split into " + lines.length + " lines. first line: " + JSON.stringify(lines[0]?.substring(0, 50)));
+  if (lines[0] && lines[0].trim().match(/^```/)) lines.shift();
   while (lines.length > 0 && lines[lines.length - 1].trim() === "") lines.pop();
   if (lines.length > 0 && lines[lines.length - 1].trim().match(/^```/)) lines.pop();
   cleaned = lines.join("\n").trim();
@@ -123,13 +145,13 @@ function extractJSON(str) {
   // Method 1a: Direct parse
   try {
     const parsed = JSON.parse(cleaned);
-    console.log("[PPTX] extractJSON: direct parse succeeded");
+    console.log("[PPTX] extractJSON: Method 1a direct parse succeeded, sections=" + (parsed.sections?.length || 0));
     return parsed;
   } catch (e) {
-    console.log("[PPTX] extractJSON: direct parse failed:", e.message.substring(0, 120));
+    console.log("[PPTX] extractJSON: Method 1a failed:", e.message.substring(0, 120));
   }
 
-  // Method 2: Balanced braces extraction
+  // ── Method 2: Balanced braces extraction ──
   try {
     const startIdx = cleaned.indexOf("{");
     if (startIdx >= 0) {
@@ -146,34 +168,34 @@ function extractJSON(str) {
       if (endIdx > startIdx) {
         const jsonStr = cleaned.substring(startIdx, endIdx + 1);
         const parsed = JSON.parse(jsonStr);
-        console.log("[PPTX] extractJSON: balanced braces succeeded");
+        console.log("[PPTX] extractJSON: Method 2 balanced braces succeeded, sections=" + (parsed.sections?.length || 0));
         return parsed;
       }
     }
   } catch (e) {
-    console.log("[PPTX] extractJSON: balanced braces failed:", e.message.substring(0, 120));
+    console.log("[PPTX] extractJSON: Method 2 failed:", e.message.substring(0, 120));
   }
 
-  // Method 3: Regex fallback
+  // ── Method 3: Regex fallback ──
   try {
     const match = cleaned.match(/\{[\s\S]*\}/);
     if (match) {
       const parsed = JSON.parse(match[0]);
-      console.log("[PPTX] extractJSON: regex succeeded");
+      console.log("[PPTX] extractJSON: Method 3 regex succeeded");
       return parsed;
     }
   } catch (e) {
-    console.log("[PPTX] extractJSON: regex failed:", e.message.substring(0, 120));
+    console.log("[PPTX] extractJSON: Method 3 failed:", e.message.substring(0, 120));
   }
 
-  // Method 4: Original string raw cleanup
+  // ── Method 4: Raw cleanup on ORIGINAL string ──
   try {
     const raw = str.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
     const parsed = JSON.parse(raw);
-    console.log("[PPTX] extractJSON: raw cleanup succeeded");
+    console.log("[PPTX] extractJSON: Method 4 raw cleanup succeeded");
     return parsed;
   } catch (e) {
-    console.log("[PPTX] extractJSON: raw cleanup failed:", e.message.substring(0, 120));
+    console.log("[PPTX] extractJSON: Method 4 failed:", e.message.substring(0, 120));
   }
 
   console.error("[PPTX] extractJSON: ALL methods failed for string of length", str.length);
@@ -1441,12 +1463,34 @@ module.exports = async function handler(req, res) {
     console.log("[PPTX] Debug info:", JSON.stringify(debugInfo));
     _lastDebugInfo = debugInfo;
 
-    // ── Save raw input to Supabase for debugging ──
-    if (SUPABASE_KEY && debugInfo.section_count === 0) {
+    // ── Save raw input to Supabase for debugging (ALWAYS save) ──
+    if (SUPABASE_KEY) {
       try {
         const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
         const debugFilename = `debug/raw_input_${Date.now()}.json`;
-        const debugContent = JSON.stringify({ input, debugInfo, parsedData: typeof proposalData === "string" ? proposalData.substring(0, 5000) : proposalData }, null, 2);
+        // Character analysis of raw proposal_content
+        const rawPC = input.proposal_content;
+        const charAnalysis = typeof rawPC === "string" ? {
+          length: rawPC.length,
+          first_char_code: rawPC.charCodeAt(0),
+          last_char_code: rawPC.charCodeAt(rawPC.length - 1),
+          has_real_newlines: rawPC.includes("\n"),
+          has_literal_backslash_n: rawPC.includes("\\n"),
+          starts_with_quote: rawPC.charAt(0) === '"',
+          starts_with_backtick: rawPC.charAt(0) === '`',
+          first_100_chars: rawPC.substring(0, 100),
+          last_50_chars: rawPC.substring(rawPC.length - 50),
+          first_30_char_codes: Array.from(rawPC.substring(0, 30)).map(c => c.charCodeAt(0)),
+          newline_count: (rawPC.match(/\n/g) || []).length,
+        } : { type: typeof rawPC, value_preview: JSON.stringify(rawPC)?.substring(0, 200) };
+        const debugContent = JSON.stringify({
+          timestamp: new Date().toISOString(),
+          debugInfo,
+          charAnalysis,
+          raw_proposal_content_full: typeof rawPC === "string" ? rawPC : JSON.stringify(rawPC),
+          all_input_keys: Object.keys(input),
+          input_field_types: Object.fromEntries(Object.entries(input).map(([k, v]) => [k, typeof v])),
+        }, null, 2);
         await supabase.storage.from("proposals").upload(debugFilename, Buffer.from(debugContent), { contentType: "application/json", upsert: true });
         console.log("[PPTX] Saved debug file:", debugFilename);
       } catch (e) { console.error("[PPTX] Debug save error:", e.message); }
