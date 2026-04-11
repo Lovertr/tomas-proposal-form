@@ -95,6 +95,80 @@ function toText(content, fallback) {
 }
 
 // ═══════════════════════════════════════════════════════════
+// ROBUST JSON EXTRACTION (handles markdown fences, Thai text)
+// ═══════════════════════════════════════════════════════════
+function extractJSON(str) {
+  if (!str || typeof str !== "string") return null;
+
+  // Method 1: Remove markdown code fences line-by-line (most reliable)
+  let cleaned = str;
+  const lines = cleaned.split("\n");
+  if (lines[0].trim().match(/^```/)) lines.shift();
+  while (lines.length > 0 && lines[lines.length - 1].trim() === "") lines.pop();
+  if (lines.length > 0 && lines[lines.length - 1].trim().match(/^```/)) lines.pop();
+  cleaned = lines.join("\n").trim();
+
+  // Method 1a: Direct parse
+  try {
+    const parsed = JSON.parse(cleaned);
+    console.log("[PPTX] extractJSON: direct parse succeeded");
+    return parsed;
+  } catch (e) {
+    console.log("[PPTX] extractJSON: direct parse failed:", e.message.substring(0, 120));
+  }
+
+  // Method 2: Balanced braces extraction
+  try {
+    const startIdx = cleaned.indexOf("{");
+    if (startIdx >= 0) {
+      let depth = 0, inString = false, escape = false, endIdx = -1;
+      for (let i = startIdx; i < cleaned.length; i++) {
+        const ch = cleaned[i];
+        if (escape) { escape = false; continue; }
+        if (ch === "\\") { escape = true; continue; }
+        if (ch === '"' && !escape) { inString = !inString; continue; }
+        if (inString) continue;
+        if (ch === "{") depth++;
+        if (ch === "}") { depth--; if (depth === 0) { endIdx = i; break; } }
+      }
+      if (endIdx > startIdx) {
+        const jsonStr = cleaned.substring(startIdx, endIdx + 1);
+        const parsed = JSON.parse(jsonStr);
+        console.log("[PPTX] extractJSON: balanced braces succeeded");
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.log("[PPTX] extractJSON: balanced braces failed:", e.message.substring(0, 120));
+  }
+
+  // Method 3: Regex fallback
+  try {
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    if (match) {
+      const parsed = JSON.parse(match[0]);
+      console.log("[PPTX] extractJSON: regex succeeded");
+      return parsed;
+    }
+  } catch (e) {
+    console.log("[PPTX] extractJSON: regex failed:", e.message.substring(0, 120));
+  }
+
+  // Method 4: Original string raw cleanup
+  try {
+    const raw = str.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+    const parsed = JSON.parse(raw);
+    console.log("[PPTX] extractJSON: raw cleanup succeeded");
+    return parsed;
+  } catch (e) {
+    console.log("[PPTX] extractJSON: raw cleanup failed:", e.message.substring(0, 120));
+  }
+
+  console.error("[PPTX] extractJSON: ALL methods failed for string of length", str.length);
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════
 // SLIDE FRAMEWORK
 // ═══════════════════════════════════════════════════════════
 
@@ -1182,12 +1256,11 @@ async function generatePPTX(proposalData) {
 
   let data = proposalData;
   if (typeof data === "string") {
-    try {
-      const cleaned = data.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
-      const match = cleaned.match(/\{[\s\S]*\}/);
-      if (match) data = JSON.parse(match[0]);
-    } catch (e) {
-      console.error("[PPTX-GEN] Failed to parse data string:", e.message);
+    const parsed = extractJSON(data);
+    if (parsed) {
+      data = parsed;
+    } else {
+      console.error("[PPTX-GEN] Failed to parse data string, using fallback");
       data = { proposal_title: "Proposal", client_name: "Client", sections: [] };
     }
   }
@@ -1316,38 +1389,26 @@ module.exports = async function handler(req, res) {
     // ── Parse string to JSON ──
     let proposalData = proposalContent;
     if (typeof proposalData === "string") {
-      console.log("[PPTX] Parsing string content, first 200 chars:", proposalData.substring(0, 200));
-      try {
-        const cleaned = proposalData.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
-        const match = cleaned.match(/\{[\s\S]*\}/);
-        if (match) {
-          proposalData = JSON.parse(match[0]);
-          console.log("[PPTX] Parsed OK. Keys:", Object.keys(proposalData), "sections:", Array.isArray(proposalData.sections) ? proposalData.sections.length : "missing");
-        } else {
-          console.error("[PPTX] No JSON object found in content");
-        }
-      } catch (e) {
-        console.error("[PPTX] JSON parse error:", e.message);
+      console.log("[PPTX] Parsing string content, length:", proposalData.length, "first 200 chars:", proposalData.substring(0, 200));
+      const parsed = extractJSON(proposalData);
+      if (parsed) {
+        proposalData = parsed;
+        console.log("[PPTX] Parsed OK. Keys:", Object.keys(proposalData), "sections:", Array.isArray(proposalData.sections) ? proposalData.sections.length : "missing");
+      } else {
+        console.error("[PPTX] Failed to parse proposal content as JSON");
       }
     }
 
     // ── If still string or no sections, try to find sections in nested structure ──
     if (typeof proposalData === "object" && !proposalData.sections) {
-      // Check if content was double-wrapped: { proposal_content: "{...json...}" }
       for (const key of ["proposal_content", "output", "text", "response"]) {
         if (proposalData[key] && typeof proposalData[key] === "string") {
-          try {
-            const nested = proposalData[key].replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
-            const match = nested.match(/\{[\s\S]*\}/);
-            if (match) {
-              const parsed = JSON.parse(match[0]);
-              if (parsed.sections) {
-                console.log("[PPTX] Found sections in nested field:", key, "count:", parsed.sections.length);
-                proposalData = parsed;
-                break;
-              }
-            }
-          } catch (e) { /* skip */ }
+          const parsed = extractJSON(proposalData[key]);
+          if (parsed && parsed.sections) {
+            console.log("[PPTX] Found sections in nested field:", key, "count:", parsed.sections.length);
+            proposalData = parsed;
+            break;
+          }
         }
       }
     }
