@@ -21,12 +21,28 @@
     }
 
     .app-container {
-      max-width: 480px;
+      max-width: 640px;
       margin: 0 auto;
       background: white;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+    }
+
+    /* Desktop-friendly: wider form on large screens */
+    @media (min-width: 768px) {
+      body {
+        background: linear-gradient(135deg, #e8f0fb 0%, #f5f7fa 100%);
+        padding: 24px 0;
+      }
+      .app-container {
+        max-width: 680px;
+        min-height: auto;
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(0, 48, 135, 0.12);
+        margin: 20px auto;
+        overflow: hidden;
+      }
     }
 
     /* Header */
@@ -619,13 +635,13 @@
         <div class="form-group">
           <label class="form-label">Budget Range</label>
           <select id="budgetRange">
-            <option value="">ยังไม่ระบุ</option>
-            <option value="below-500k">ต่ำกว่า 500,000 บาท</option>
-            <option value="500k-1m">500,000 - 1,000,000 บาท</option>
-            <option value="1m-3m">1,000,000 - 3,000,000 บาท</option>
-            <option value="3m-5m">3,000,000 - 5,000,000 บาท</option>
-            <option value="5m-10m">5,000,000 - 10,000,000 บาท</option>
-            <option value="10m-plus">10,000,000 บาท ขึ้นไป</option>
+            <option value="">Not yet specified.</option>
+            <option value="below-500k">less than 500,000 THB</option>
+            <option value="500k-1m">500,000 - 1,000,000 THB</option>
+            <option value="1m-3m">1,000,000 - 3,000,000 THB</option>
+            <option value="3m-5m">3,000,000 - 5,000,000 THB</option>
+            <option value="5m-10m">5,000,000 - 10,000,000 THB</option>
+            <option value="10m-plus">10,000,000 THB or more</option>
           </select>
         </div>
 
@@ -683,16 +699,16 @@
       <!-- Success Screen -->
       <div class="success-screen" id="successScreen">
         <div class="success-icon">🚀</div>
-        <div class="success-title">ส่งข้อมูลเรียบร้อย!</div>
+        <div class="success-title">Data submitted successfully!</div>
         <div class="success-message">
-          AI กำลังวิเคราะห์ข้อมูล คุณจะได้รับสรุปใน LINE เร็วๆ นี้
+          AI is analyzing the data. You will receive a summary in LINE soon.
         </div>
         <div class="loading-dots">
           <div class="dot"></div>
           <div class="dot"></div>
           <div class="dot"></div>
         </div>
-        <div class="success-timer">ประมาณ 30 วินาที — ปิดหน้านี้ได้เลย</div>
+        <div class="success-timer">Approximately 30 seconds — You can close this page now.</div>
       </div>
     </div>
 
@@ -710,7 +726,9 @@
     // CONFIG
     const CONFIG = {
       LIFF_ID: '2009680907-XvJSLuFn',
-      WEBHOOK_URL: 'https://horakomapp.app.n8n.cloud/webhook/proposal-form'
+      WEBHOOK_URL: 'https://horakomapp.app.n8n.cloud/webhook/proposal-form',
+      SUPABASE_URL: 'https://hsmawbvxhlkssdowlbzx.supabase.co',
+      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhzbWF3YnZ4aGxrc3Nkb3dsYnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMjMwNDQsImV4cCI6MjA5MDY5OTA0NH0.RVBNzQvB3IraqJfZ-SbDHW-C7cNKO9pc4qPbANLpJKU'
     };
 
     // State
@@ -773,48 +791,152 @@
       ]
     };
 
-    // Initialize LIFF
+    // Detect if running inside LINE app or standalone browser (PC/Desktop)
+    function isRunningInLINE() {
+      const ua = navigator.userAgent || '';
+      return ua.includes('Line/') || ua.includes('LIFF');
+    }
+
+    // Initialize — LIFF for LINE app, standalone for PC browser
     async function initLIFF() {
-      try {
-        await liff.init({ liffId: CONFIG.LIFF_ID });
+      const urlParams = new URLSearchParams(window.location.search);
+      const editId = urlParams.get('edit');
+      
+      // ── Read uid/gid from URL params (sent by n8n Flex Message for PC) ──
+      const urlUid = urlParams.get('uid');
+      const urlGid = urlParams.get('gid');
+      if (urlUid) formData.line_user_id = urlUid;
+      if (urlGid) formData.line_group_id = urlGid;
 
-        if (!liff.isLoggedIn()) {
-          liff.login();
-        }
-
-        // Get user profile
-        liffProfile = await liff.getProfile();
-        formData.line_user_id = liffProfile.userId;
-
-        // Get context
+      if (isRunningInLINE()) {
+        // ── Running inside LINE app → use LIFF ──
         try {
-          liffContext = liff.getContext();
-          if (liffContext && liffContext.groupId) {
-            formData.line_group_id = liffContext.groupId;
-          } else if (liffContext && liffContext.roomId) {
-            formData.line_group_id = liffContext.roomId;
+          await liff.init({ liffId: CONFIG.LIFF_ID });
+
+          if (!liff.isLoggedIn()) {
+            liff.login({ redirectUri: window.location.href });
+            return;
+          }
+
+          liffProfile = await liff.getProfile();
+          formData.line_user_id = liffProfile.userId;
+
+          try {
+            liffContext = liff.getContext();
+            if (liffContext && liffContext.groupId) {
+              formData.line_group_id = liffContext.groupId;
+            } else if (liffContext && liffContext.roomId) {
+              formData.line_group_id = liffContext.roomId;
+            }
+          } catch (e) {
+            console.log('Context not available');
+          }
+        } catch (error) {
+          console.error('LIFF init error:', error);
+        if (!formData.line_user_id) formData.line_user_id = 'liff_fallback_' + Date.now();
+        }
+      } else {
+        // ── Running on PC/Desktop browser → standalone mode ──
+        console.log('🖥️ Desktop mode — form works standalone');
+        if (!formData.line_user_id) formData.line_user_id = 'web_user_' + Date.now();
+
+        // If uid/gid received via URL, LINE can reply after form submit
+        if (urlUid && urlGid) {
+          console.log('✅ LINE context received via URL params — results will be sent to LINE');
+        }
+        
+        // Try LIFF init silently (might work if user logged in before)
+        try {
+          await liff.init({ liffId: CONFIG.LIFF_ID });
+          if (liff.isLoggedIn()) {
+            const profile = await liff.getProfile();
+            formData.line_user_id = profile.userId;
+            console.log('LIFF login detected on desktop, using LINE profile');
           }
         } catch (e) {
-          console.log('Context not available');
+          console.log('LIFF not available on desktop — using standalone mode');
         }
+      }
 
-        // Check for edit mode
-        const urlParams = new URLSearchParams(window.location.search);
-        const editId = urlParams.get('edit');
-        if (editId) {
-          await loadProposalForEdit(editId);
-        }
-      } catch (error) {
-        console.error('LIFF init error:', error);
-        showToast('Failed to initialize LINE app');
+      // Check for edit mode (works both on LINE and Desktop)
+      if (editId) {
+        await loadProposalForEdit(editId);
       }
     }
 
-    // Load proposal for edit (Supabase integration would go here)
+    // Load proposal for edit — fetch from Supabase and pre-fill form
     async function loadProposalForEdit(requestId) {
       console.log('Loading proposal for edit:', requestId);
-      // This would fetch from Supabase and pre-fill the form
-      // Implementation depends on your Supabase setup
+      try {
+        const res = await fetch(
+          `${CONFIG.SUPABASE_URL}/rest/v1/proposal_requests?id=eq.${requestId}&select=*`,
+          {
+            headers: {
+              'apikey': CONFIG.SUPABASE_ANON_KEY,
+              'Authorization': 'Bearer ' + CONFIG.SUPABASE_ANON_KEY
+            }
+          }
+        );
+        if (!res.ok) throw new Error('Failed to fetch proposal');
+        const rows = await res.json();
+        if (!rows || rows.length === 0) {
+          showToast('No proposal information found.');
+          return;
+        }
+        const data = rows[0];
+
+        // Pre-fill formData
+        formData.client_name = data.client_name || '';
+        formData.contact_person = data.contact_person || '';
+        formData.language = data.language || 'th';
+        formData.service_type = data.service_type || '';
+        formData.job_description = data.job_description || '';
+        formData.project_name = data.project_name || '';
+        formData.budget_range = data.budget_range || '';
+        formData.deadline = data.deadline || '';
+        formData.line_user_id = data.line_user_id || formData.line_user_id;
+        formData.line_group_id = data.line_group_id || formData.line_group_id;
+
+        // Store edit ID so we can update instead of create
+        formData._editId = requestId;
+
+        // Pre-fill UI elements
+        const el = (id) => document.getElementById(id);
+        if (el('clientName')) el('clientName').value = formData.client_name;
+        if (el('contactPerson')) el('contactPerson').value = formData.contact_person;
+        if (el('jobDescription')) {
+          el('jobDescription').value = formData.job_description;
+          if (el('charCount')) el('charCount').textContent = formData.job_description.length;
+        }
+        if (el('projectName')) el('projectName').value = formData.project_name;
+        if (el('budgetRange')) el('budgetRange').value = formData.budget_range;
+        if (el('deadline')) el('deadline').value = formData.deadline;
+
+        // Pre-select service type chip
+        if (formData.service_type) {
+          document.querySelectorAll('.chip').forEach(chip => {
+            chip.classList.remove('selected');
+            if (chip.dataset.service === formData.service_type) {
+              chip.classList.add('selected');
+            }
+          });
+        }
+
+        // Pre-select language radio
+        if (formData.language) {
+          const radio = document.querySelector(`input[name="language"][value="${formData.language}"]`);
+          if (radio) radio.checked = true;
+        }
+
+        // Update example pills
+        if (typeof updateExamplePills === 'function') updateExamplePills();
+
+        showToast('Original data has been successfully loaded and is ready for editing.');
+        console.log('Proposal loaded for edit:', data);
+      } catch (error) {
+        console.error('Load proposal error:', error);
+        showToast('The proposal data could not be loaded.');
+      }
     }
 
     // Setup event listeners
@@ -1005,14 +1127,50 @@
 
       try {
         console.log('Submitting form data:', JSON.stringify(formData));
-        const response = await fetch(CONFIG.WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        });
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        if (formData._editId) {
+          // EDIT MODE: Update existing record in Supabase directly
+          const updateData = {
+            client_name: formData.client_name,
+            contact_person: formData.contact_person,
+            language: formData.language,
+            service_type: formData.service_type,
+            job_description: formData.job_description,
+            project_name: formData.project_name,
+            budget_range: formData.budget_range,
+            deadline: formData.deadline || null,
+            status: 'pending_confirm'
+          };
+          const res = await fetch(
+            `${CONFIG.SUPABASE_URL}/rest/v1/proposal_requests?id=eq.${formData._editId}`,
+            {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': CONFIG.SUPABASE_ANON_KEY,
+                'Authorization': 'Bearer ' + CONFIG.SUPABASE_ANON_KEY,
+                'Prefer': 'return=minimal'
+              },
+              body: JSON.stringify(updateData)
+            }
+          );
+          if (!res.ok) throw new Error('Update failed: ' + res.status);
+          console.log('Proposal updated successfully');
+
+          // Also notify webhook so AI re-processes
+          await fetch(CONFIG.WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...formData, _action: 'edit' })
+          }).catch(e => console.log('Webhook notify failed:', e));
+        } else {
+          // CREATE MODE: Send to webhook as normal
+          const response = await fetch(CONFIG.WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+          });
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         console.log('Form submitted successfully');
@@ -1021,11 +1179,14 @@
         showToast('Error: ' + error.message);
       }
 
-      // Auto-close after 5 seconds (only in LINE app)
+      // Auto-close after 5 seconds (only in LINE app, not on PC browser)
       setTimeout(() => {
         try {
           if (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
             liff.closeWindow();
+          } else {
+            // On PC/external browser: show success message instead of closing
+            showToast('You can close this page now, or wait to receive the link in LINE.');
           }
         } catch (e) { /* ignore */ }
       }, 5000);
