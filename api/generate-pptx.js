@@ -210,6 +210,100 @@ function extractJSON(str) {
     trace("M4: FAIL " + e.message.substring(0, 100));
   }
 
+  // ── Method 5: TRUNCATED JSON RECOVERY ──
+  // AI output often gets cut off due to max_tokens limit
+  // Try to find valid JSON with as many complete sections as possible
+  try {
+    // Start from the cleaned string (fences removed) or find first {
+    let jsonCandidate = cleaned || str;
+    const firstBrace = jsonCandidate.indexOf("{");
+    if (firstBrace > 0) jsonCandidate = jsonCandidate.substring(firstBrace);
+
+    // Find the last complete object/array boundary before truncation
+    // Look for the last valid "sections" array content
+    // Strategy: find last "}," or "}" that could close a section, then close the array and root object
+    let lastGoodPos = -1;
+
+    // Try progressively shorter substrings, looking for valid JSON
+    // Find all positions where a section object might end: "},\n" or "}\n" before the next section
+    const sectionEnds = [];
+    const sectionEndRegex = /\}\s*,?\s*\n\s*\{?\s*"?(section_title|type|title)"?/g;
+    let m;
+    while ((m = sectionEndRegex.exec(jsonCandidate)) !== null) {
+      sectionEnds.push(m.index + 1); // position right after the }
+    }
+
+    // Also find positions of "}]" which might close the sections array
+    const arrayCloseRegex = /\}\s*\]/g;
+    while ((m = arrayCloseRegex.exec(jsonCandidate)) !== null) {
+      sectionEnds.push(m.index + m[0].length);
+    }
+
+    // Also try finding the last complete "}" before any incomplete string
+    for (let i = jsonCandidate.length - 1; i >= 0; i--) {
+      if (jsonCandidate[i] === '}') {
+        // Try to close: add "]}" to close sections array and root object
+        const attempts = [
+          jsonCandidate.substring(0, i + 1) + ']}',           // close sections array + root
+          jsonCandidate.substring(0, i + 1) + '"]}',          // close string + sections + root
+          jsonCandidate.substring(0, i + 1) + '"}]}',         // close string + object + sections + root
+          jsonCandidate.substring(0, i + 1),                   // already complete?
+          jsonCandidate.substring(0, i + 1) + '}',            // close one more object
+        ];
+        for (const attempt of attempts) {
+          try {
+            const parsed = JSON.parse(attempt);
+            if (parsed && parsed.sections && parsed.sections.length > 0) {
+              trace("M5: TRUNCATED RECOVERY SUCCESS at pos " + i + " sections=" + parsed.sections.length);
+              return parsed;
+            }
+          } catch (e2) { /* try next */ }
+        }
+        // Only try the last 5 closing braces to avoid O(n²)
+        if (lastGoodPos === -1) lastGoodPos = i;
+        if (i < lastGoodPos - 500) break;
+      }
+    }
+
+    // Last resort: find everything up to last complete section in "sections" array
+    const sectionsStart = jsonCandidate.indexOf('"sections"');
+    if (sectionsStart > 0) {
+      const arrayStart = jsonCandidate.indexOf('[', sectionsStart);
+      if (arrayStart > 0) {
+        // Find all complete JSON objects in the array
+        let depth = 0, objStart = -1, lastObjEnd = -1, inStr = false, esc = false;
+        for (let i = arrayStart + 1; i < jsonCandidate.length; i++) {
+          const ch = jsonCandidate[i];
+          if (esc) { esc = false; continue; }
+          if (ch === '\\') { esc = true; continue; }
+          if (ch === '"') { inStr = !inStr; continue; }
+          if (inStr) continue;
+          if (ch === '{') { if (depth === 0) objStart = i; depth++; }
+          if (ch === '}') { depth--; if (depth === 0 && objStart >= 0) { lastObjEnd = i; } }
+        }
+        if (lastObjEnd > arrayStart) {
+          // Build valid JSON: everything before sections array + complete sections + close
+          const prefix = jsonCandidate.substring(0, arrayStart + 1);
+          const sectionContent = jsonCandidate.substring(arrayStart + 1, lastObjEnd + 1);
+          const rebuilt = prefix + sectionContent + "]}";
+          try {
+            const parsed = JSON.parse(rebuilt);
+            if (parsed && parsed.sections && parsed.sections.length > 0) {
+              trace("M5b: REBUILT SECTIONS SUCCESS count=" + parsed.sections.length);
+              return parsed;
+            }
+          } catch (e2) {
+            trace("M5b: rebuild failed: " + e2.message.substring(0, 80));
+          }
+        }
+      }
+    }
+
+    trace("M5: truncated recovery could not find valid JSON");
+  } catch (e) {
+    trace("M5: ERROR " + e.message.substring(0, 100));
+  }
+
   trace("ALL METHODS FAILED for string len=" + str.length);
   return null;
 }
