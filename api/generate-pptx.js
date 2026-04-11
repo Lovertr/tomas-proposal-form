@@ -100,6 +100,18 @@ function toText(content, fallback) {
 function extractJSON(str) {
   if (!str || typeof str !== "string") return null;
 
+  // Step 0: Convert literal escape sequences to real characters
+  // n8n often sends literal \n (two chars: backslash + n) instead of actual newlines
+  if (str.indexOf("\\n") !== -1 && str.indexOf("\n") === -1) {
+    console.log("[PPTX] extractJSON: converting literal \\n to real newlines");
+    str = str.replace(/\\n/g, "\n").replace(/\\t/g, "\t");
+  }
+  // Also handle case where BOTH literal and real newlines exist
+  else if (str.indexOf("\\n") !== -1) {
+    console.log("[PPTX] extractJSON: found mixed literal \\n, converting");
+    str = str.replace(/\\n/g, "\n").replace(/\\t/g, "\t");
+  }
+
   // Method 1: Remove markdown code fences line-by-line (most reliable)
   let cleaned = str;
   const lines = cleaned.split("\n");
@@ -1447,7 +1459,8 @@ module.exports = async function handler(req, res) {
 
     const safeName = (clientName || "proposal").replace(/[^a-zA-Z0-9\u0E00-\u0E7F]/g, "_").substring(0, 30);
     const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-    const filename = `TOMAS_TECH_Proposal_${safeName}_${timestamp}.pptx`;
+    const uniqueId = Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
+    const filename = `TOMAS_TECH_Proposal_${safeName}_${timestamp}_${uniqueId}.pptx`;
 
     if (SUPABASE_KEY) {
       try {
