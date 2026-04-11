@@ -97,112 +97,120 @@ function toText(content, fallback) {
 // ═══════════════════════════════════════════════════════════
 // ROBUST JSON EXTRACTION (handles markdown fences, Thai text)
 // ═══════════════════════════════════════════════════════════
-function extractJSON(str) {
-  if (!str || typeof str !== "string") return null;
+// Trace log for debugging - saved to Supabase debug files
+let _extractJSONTrace = [];
 
-  // ── DIAGNOSTIC: Character-level analysis ──
-  const first30codes = [];
-  for (let i = 0; i < Math.min(30, str.length); i++) first30codes.push(str.charCodeAt(i));
+function extractJSON(str) {
+  _extractJSONTrace = [];
+  const trace = (msg) => { _extractJSONTrace.push(msg); console.log("[PPTX] " + msg); };
+
+  if (!str || typeof str !== "string") { trace("extractJSON: null/empty input"); return null; }
+
   const hasRealNewlines = str.includes("\n");
   const hasLiteralBackslashN = str.includes("\\n");
   const startsWithQuote = str.charAt(0) === '"';
-  console.log("[PPTX] extractJSON DIAG: len=" + str.length + " realNL=" + hasRealNewlines + " litBSN=" + hasLiteralBackslashN + " startsQuote=" + startsWithQuote);
-  console.log("[PPTX] extractJSON DIAG first30codes:", JSON.stringify(first30codes));
-  console.log("[PPTX] extractJSON DIAG first100:", JSON.stringify(str.substring(0, 100)));
-  console.log("[PPTX] extractJSON DIAG last50:", JSON.stringify(str.substring(str.length - 50)));
+  const startsWithBacktick = str.charAt(0) === '`';
+  trace("DIAG: len=" + str.length + " realNL=" + hasRealNewlines + " litBSN=" + hasLiteralBackslashN + " quote=" + startsWithQuote + " backtick=" + startsWithBacktick);
 
-  // ── Method 0: Double-stringified JSON (n8n often wraps strings in extra quotes) ──
+  // ── Method 0: Double-stringified JSON ──
   if (startsWithQuote) {
     try {
       const unwrapped = JSON.parse(str);
-      if (typeof unwrapped === "string") {
-        console.log("[PPTX] extractJSON: unwrapped double-stringified, recursing...");
-        return extractJSON(unwrapped);
-      } else if (typeof unwrapped === "object" && unwrapped !== null) {
-        console.log("[PPTX] extractJSON: direct JSON.parse of quoted string returned object");
-        return unwrapped;
-      }
-    } catch (e) {
-      console.log("[PPTX] extractJSON: not double-stringified:", e.message.substring(0, 80));
-    }
+      if (typeof unwrapped === "string") { trace("M0: unwrapped double-stringified, recursing"); return extractJSON(unwrapped); }
+      if (typeof unwrapped === "object" && unwrapped !== null) { trace("M0: parsed to object directly"); return unwrapped; }
+    } catch (e) { trace("M0: not double-stringified: " + e.message.substring(0, 80)); }
   }
 
-  // ── Step 0a: Convert literal escape sequences ONLY when no real newlines exist ──
-  // If the string has real newlines, the \n inside JSON strings are valid escape sequences - don't touch them!
-  // Only convert if the entire string is on ONE line (meaning \n are literal, not inside JSON strings)
+  // ── Step 0a: Convert literal \n ONLY when no real newlines exist ──
   if (hasLiteralBackslashN && !hasRealNewlines) {
-    console.log("[PPTX] extractJSON: no real newlines found, converting literal \\n to real newlines");
+    trace("Step0a: converting literal \\n to real newlines (no real NL found)");
     str = str.replace(/\\n/g, "\n").replace(/\\t/g, "\t").replace(/\\r/g, "\r");
-  } else if (hasLiteralBackslashN && hasRealNewlines) {
-    console.log("[PPTX] extractJSON: has BOTH real newlines and literal \\n - keeping \\n as-is (valid JSON escapes in strings)");
   }
 
-  // ── Method 1: Remove markdown code fences line-by-line ──
+  // ── Method 1: Remove ANY markdown code fences (1+ backticks) ──
   let cleaned = str;
   const lines = cleaned.split("\n");
-  console.log("[PPTX] extractJSON: split into " + lines.length + " lines. first line: " + JSON.stringify(lines[0]?.substring(0, 50)));
-  if (lines[0] && lines[0].trim().match(/^```/)) lines.shift();
+  trace("M1: " + lines.length + " lines, first=" + JSON.stringify((lines[0] || "").substring(0, 40)));
+  // Remove first line if it's backtick fence (1+ backticks, optional language tag)
+  if (lines[0] && lines[0].trim().match(/^`+\s*(json|JSON|javascript|JS)?$/i)) {
+    trace("M1: removed first line code fence: " + JSON.stringify(lines[0].trim()));
+    lines.shift();
+  }
+  // Remove trailing empty lines
   while (lines.length > 0 && lines[lines.length - 1].trim() === "") lines.pop();
-  if (lines.length > 0 && lines[lines.length - 1].trim().match(/^```/)) lines.pop();
+  // Remove last line if it's backtick fence
+  if (lines.length > 0 && lines[lines.length - 1].trim().match(/^`+$/)) {
+    trace("M1: removed last line code fence: " + JSON.stringify(lines[lines.length - 1].trim()));
+    lines.pop();
+  }
   cleaned = lines.join("\n").trim();
+  trace("M1: cleaned len=" + cleaned.length + " first40=" + JSON.stringify(cleaned.substring(0, 40)));
 
-  // Method 1a: Direct parse
+  // Method 1a: Direct parse after fence removal
   try {
     const parsed = JSON.parse(cleaned);
-    console.log("[PPTX] extractJSON: Method 1a direct parse succeeded, sections=" + (parsed.sections?.length || 0));
+    trace("M1a: SUCCESS sections=" + (parsed.sections?.length || 0));
     return parsed;
   } catch (e) {
-    console.log("[PPTX] extractJSON: Method 1a failed:", e.message.substring(0, 120));
+    trace("M1a: FAIL " + e.message.substring(0, 100));
   }
 
-  // ── Method 2: Balanced braces extraction ──
+  // ── Method 2: Find first { and extract balanced JSON ──
   try {
-    const startIdx = cleaned.indexOf("{");
+    const src = str; // Use ORIGINAL string to avoid fence removal issues
+    const startIdx = src.indexOf("{");
     if (startIdx >= 0) {
-      let depth = 0, inString = false, escape = false, endIdx = -1;
-      for (let i = startIdx; i < cleaned.length; i++) {
-        const ch = cleaned[i];
-        if (escape) { escape = false; continue; }
-        if (ch === "\\") { escape = true; continue; }
-        if (ch === '"' && !escape) { inString = !inString; continue; }
-        if (inString) continue;
+      let depth = 0, inStr = false, esc = false, endIdx = -1;
+      for (let i = startIdx; i < src.length; i++) {
+        const ch = src[i];
+        if (esc) { esc = false; continue; }
+        if (ch === "\\") { esc = true; continue; }
+        if (ch === '"') { inStr = !inStr; continue; }
+        if (inStr) continue;
         if (ch === "{") depth++;
         if (ch === "}") { depth--; if (depth === 0) { endIdx = i; break; } }
       }
+      trace("M2: startIdx=" + startIdx + " endIdx=" + endIdx + " jsonLen=" + (endIdx > startIdx ? endIdx - startIdx + 1 : 0));
       if (endIdx > startIdx) {
-        const jsonStr = cleaned.substring(startIdx, endIdx + 1);
+        const jsonStr = src.substring(startIdx, endIdx + 1);
         const parsed = JSON.parse(jsonStr);
-        console.log("[PPTX] extractJSON: Method 2 balanced braces succeeded, sections=" + (parsed.sections?.length || 0));
+        trace("M2: SUCCESS sections=" + (parsed.sections?.length || 0));
         return parsed;
+      } else {
+        trace("M2: balanced braces did not find matching }");
       }
     }
   } catch (e) {
-    console.log("[PPTX] extractJSON: Method 2 failed:", e.message.substring(0, 120));
+    trace("M2: FAIL " + e.message.substring(0, 100));
   }
 
-  // ── Method 3: Regex fallback ──
+  // ── Method 3: Greedy regex { ... } on original string ──
   try {
-    const match = cleaned.match(/\{[\s\S]*\}/);
+    const match = str.match(/\{[\s\S]*\}/);
     if (match) {
+      trace("M3: regex matched len=" + match[0].length);
       const parsed = JSON.parse(match[0]);
-      console.log("[PPTX] extractJSON: Method 3 regex succeeded");
+      trace("M3: SUCCESS sections=" + (parsed.sections?.length || 0));
       return parsed;
+    } else {
+      trace("M3: no regex match");
     }
   } catch (e) {
-    console.log("[PPTX] extractJSON: Method 3 failed:", e.message.substring(0, 120));
+    trace("M3: FAIL " + e.message.substring(0, 100));
   }
 
-  // ── Method 4: Raw cleanup on ORIGINAL string ──
+  // ── Method 4: Aggressive cleanup - remove ALL backtick sequences ──
   try {
-    const raw = str.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+    const raw = str.replace(/`+json\s*/gi, "").replace(/`+\s*/g, "").trim();
+    trace("M4: after cleanup len=" + raw.length + " first40=" + JSON.stringify(raw.substring(0, 40)));
     const parsed = JSON.parse(raw);
-    console.log("[PPTX] extractJSON: Method 4 raw cleanup succeeded");
+    trace("M4: SUCCESS sections=" + (parsed.sections?.length || 0));
     return parsed;
   } catch (e) {
-    console.log("[PPTX] extractJSON: Method 4 failed:", e.message.substring(0, 120));
+    trace("M4: FAIL " + e.message.substring(0, 100));
   }
 
-  console.error("[PPTX] extractJSON: ALL methods failed for string of length", str.length);
+  trace("ALL METHODS FAILED for string len=" + str.length);
   return null;
 }
 
@@ -1508,6 +1516,7 @@ module.exports = async function handler(req, res) {
         const debugContent = JSON.stringify({
           timestamp: new Date().toISOString(),
           debugInfo,
+          extractJSON_trace: _extractJSONTrace,
           charAnalysis,
           raw_proposal_content_full: typeof rawPC === "string" ? rawPC : JSON.stringify(rawPC),
           all_input_keys: Object.keys(input),
