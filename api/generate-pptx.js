@@ -127,10 +127,14 @@ function extractJSON(str) {
     }
   }
 
-  // ── Step 0a: Convert literal escape sequences to real characters ──
-  if (hasLiteralBackslashN) {
-    console.log("[PPTX] extractJSON: converting literal \\n to real newlines");
+  // ── Step 0a: Convert literal escape sequences ONLY when no real newlines exist ──
+  // If the string has real newlines, the \n inside JSON strings are valid escape sequences - don't touch them!
+  // Only convert if the entire string is on ONE line (meaning \n are literal, not inside JSON strings)
+  if (hasLiteralBackslashN && !hasRealNewlines) {
+    console.log("[PPTX] extractJSON: no real newlines found, converting literal \\n to real newlines");
     str = str.replace(/\\n/g, "\n").replace(/\\t/g, "\t").replace(/\\r/g, "\r");
+  } else if (hasLiteralBackslashN && hasRealNewlines) {
+    console.log("[PPTX] extractJSON: has BOTH real newlines and literal \\n - keeping \\n as-is (valid JSON escapes in strings)");
   }
 
   // ── Method 1: Remove markdown code fences line-by-line ──
