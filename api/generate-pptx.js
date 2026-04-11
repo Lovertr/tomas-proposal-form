@@ -1187,9 +1187,13 @@ async function generatePPTX(proposalData) {
       const match = cleaned.match(/\{[\s\S]*\}/);
       if (match) data = JSON.parse(match[0]);
     } catch (e) {
+      console.error("[PPTX-GEN] Failed to parse data string:", e.message);
       data = { proposal_title: "Proposal", client_name: "Client", sections: [] };
     }
   }
+
+  console.log("[PPTX-GEN] Data type:", typeof data, "keys:", typeof data === "object" ? Object.keys(data) : "N/A");
+  console.log("[PPTX-GEN] sections exists:", !!(data && data.sections), "count:", data?.sections?.length || 0);
 
   // 1. Cover slide
   buildCoverSlide(pptx, data);
@@ -1217,29 +1221,40 @@ async function generatePPTX(proposalData) {
     { kw: ["terms", "condition", "payment", "เงื่อนไข", "ข้อกำหนด"], fn: buildTerms },
   ];
 
-  sections.forEach((section) => {
+  console.log("[PPTX-GEN] Building", sections.length, "sections...");
+  sections.forEach((section, idx) => {
     const title = (section.section_title || section.title || "").toLowerCase();
+    console.log(`[PPTX-GEN] Section ${idx}: "${title}"`);
 
-    // Section divider
-    if (section.type === "divider" || title.includes("[divider]")) {
-      const divTitle = (section.divider_title || title.replace("[divider]", "").replace(/^\d+\.\s*/, "")).trim().toUpperCase() || "SECTION";
-      addSectionDivider(pptx, divTitle, slideNum);
-      slideNum++;
-      return;
-    }
-
-    // Match section to builder
-    let built = false;
-    for (const { kw, fn } of sectionBuilders) {
-      if (kw.some(k => title.includes(k))) {
-        fn(pptx, data, section);
-        built = true;
-        break;
+    try {
+      // Section divider
+      if (section.type === "divider" || title.includes("[divider]")) {
+        const divTitle = (section.divider_title || title.replace("[divider]", "").replace(/^\d+\.\s*/, "")).trim().toUpperCase() || "SECTION";
+        addSectionDivider(pptx, divTitle, slideNum);
+        slideNum++;
+        return;
       }
-    }
 
-    if (!built) buildGenericSlide(pptx, data, section, slideNum);
-    slideNum++;
+      // Match section to builder
+      let built = false;
+      for (const { kw, fn } of sectionBuilders) {
+        if (kw.some(k => title.includes(k))) {
+          fn(pptx, data, section);
+          built = true;
+          break;
+        }
+      }
+
+      if (!built) buildGenericSlide(pptx, data, section, slideNum);
+      slideNum++;
+    } catch (sectionError) {
+      console.error(`[PPTX-GEN] ERROR in section ${idx} "${title}":`, sectionError.message);
+      // Build a fallback slide so we don't lose this section entirely
+      try {
+        buildGenericSlide(pptx, data, section, slideNum);
+      } catch (e2) { /* skip */ }
+      slideNum++;
+    }
   });
 
   // Last: Thank you slide
@@ -1260,18 +1275,72 @@ module.exports = async function handler(req, res) {
 
   try {
     const input = req.body;
-    const proposalContent = input.proposal_content || input.output || input.text || input;
+    console.log("[PPTX] Input keys:", Object.keys(input));
+    console.log("[PPTX] proposal_content type:", typeof input.proposal_content, "length:", typeof input.proposal_content === "string" ? input.proposal_content.length : "N/A");
 
-    if (!proposalContent) return res.status(400).json({ error: "proposal_content is required" });
+    // ── Extract proposal content from various possible field names ──
+    let proposalContent = null;
+    // Try specific fields first (don't use || chain to avoid empty-string fallthrough)
+    const fieldNames = ["proposal_content", "output", "text", "response", "result", "message"];
+    for (const key of fieldNames) {
+      if (input[key] && (typeof input[key] === "string" ? input[key].trim().length > 0 : true)) {
+        proposalContent = input[key];
+        console.log("[PPTX] Using field:", key, "type:", typeof proposalContent);
+        break;
+      }
+    }
 
+    // If no named field found, check if input itself contains sections (direct JSON body)
+    if (!proposalContent && input.sections) {
+      proposalContent = input;
+      console.log("[PPTX] Using input directly (has sections)");
+    }
+
+    if (!proposalContent) {
+      console.error("[PPTX] No proposal content found! Input keys:", Object.keys(input));
+      return res.status(400).json({ error: "proposal_content is required", received_keys: Object.keys(input) });
+    }
+
+    // ── Parse string to JSON ──
     let proposalData = proposalContent;
     if (typeof proposalData === "string") {
+      console.log("[PPTX] Parsing string content, first 200 chars:", proposalData.substring(0, 200));
       try {
         const cleaned = proposalData.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
         const match = cleaned.match(/\{[\s\S]*\}/);
-        if (match) proposalData = JSON.parse(match[0]);
-      } catch (e) { /* keep as string */ }
+        if (match) {
+          proposalData = JSON.parse(match[0]);
+          console.log("[PPTX] Parsed OK. Keys:", Object.keys(proposalData), "sections:", Array.isArray(proposalData.sections) ? proposalData.sections.length : "missing");
+        } else {
+          console.error("[PPTX] No JSON object found in content");
+        }
+      } catch (e) {
+        console.error("[PPTX] JSON parse error:", e.message);
+      }
     }
+
+    // ── If still string or no sections, try to find sections in nested structure ──
+    if (typeof proposalData === "object" && !proposalData.sections) {
+      // Check if content was double-wrapped: { proposal_content: "{...json...}" }
+      for (const key of ["proposal_content", "output", "text", "response"]) {
+        if (proposalData[key] && typeof proposalData[key] === "string") {
+          try {
+            const nested = proposalData[key].replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+            const match = nested.match(/\{[\s\S]*\}/);
+            if (match) {
+              const parsed = JSON.parse(match[0]);
+              if (parsed.sections) {
+                console.log("[PPTX] Found sections in nested field:", key, "count:", parsed.sections.length);
+                proposalData = parsed;
+                break;
+              }
+            }
+          } catch (e) { /* skip */ }
+        }
+      }
+    }
+
+    console.log("[PPTX] Final data type:", typeof proposalData, "has sections:", !!(proposalData && proposalData.sections), "section count:", proposalData?.sections?.length || 0);
 
     const requestId = input.request_id;
     const clientName = input.client_name || (typeof proposalData === "object" ? proposalData.client_name : null);
