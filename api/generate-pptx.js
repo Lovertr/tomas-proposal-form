@@ -1386,10 +1386,28 @@ module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.status(200).end();
 
-  // GET: return last debug info
+  // GET: return debug info from Supabase storage (not in-memory)
   if (req.method === "GET") {
-    if (req.query.debug) {
-      return res.status(200).json({ last_debug: _lastDebugInfo || "No debug info yet. Generate a proposal first." });
+    if (req.query.debug && SUPABASE_KEY) {
+      try {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+        // List debug files and get the latest one
+        const { data: files, error: listErr } = await supabase.storage.from("proposals").list("debug", { limit: 5, sortBy: { column: "created_at", order: "desc" } });
+        if (listErr || !files || files.length === 0) {
+          return res.status(200).json({ error: "No debug files found", listErr });
+        }
+        const latestFile = files[0].name;
+        // Download the file content
+        const { data: fileData, error: dlErr } = await supabase.storage.from("proposals").download(`debug/${latestFile}`);
+        if (dlErr || !fileData) {
+          return res.status(200).json({ error: "Could not download debug file", dlErr, filename: latestFile });
+        }
+        const text = await fileData.text();
+        const parsed = JSON.parse(text);
+        return res.status(200).json({ debug_file: latestFile, debug_files_count: files.length, ...parsed });
+      } catch (e) {
+        return res.status(200).json({ error: e.message });
+      }
     }
     return res.status(200).json({ status: "ok", endpoint: "POST /api/generate-pptx" });
   }
