@@ -1,1223 +1,1385 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TOMAS TECH - Proposal Request Form</title>
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #f5f7fa;
-      color: #333;
-      line-height: 1.6;
-    }
-
-    .app-container {
-      max-width: 640px;
-      margin: 0 auto;
-      background: white;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* Desktop-friendly: wider form on large screens */
-    @media (min-width: 768px) {
-      body {
-        background: linear-gradient(135deg, #e8f0fb 0%, #f5f7fa 100%);
-        padding: 24px 0;
-      }
-      .app-container {
-        max-width: 680px;
-        min-height: auto;
-        border-radius: 16px;
-        box-shadow: 0 8px 32px rgba(0, 48, 135, 0.12);
-        margin: 20px auto;
-        overflow: hidden;
-      }
-    }
-
-    /* Header */
-    .header {
-      background: linear-gradient(135deg, #003087 0%, #004db8 100%);
-      color: white;
-      padding: 16px 20px;
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      box-shadow: 0 2px 8px rgba(0, 48, 135, 0.15);
-    }
-
-    .header h1 {
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 12px;
-    }
-
-    .header p {
-      font-size: 13px;
-      opacity: 0.9;
-    }
-
-    /* Progress Bar */
-    .progress-container {
-      display: flex;
-      gap: 8px;
-      margin-top: 12px;
-      align-items: center;
-    }
-
-    .progress-step {
-      flex: 1;
-      height: 4px;
-      background: rgba(255, 255, 255, 0.3);
-      border-radius: 2px;
-      transition: background 0.3s ease;
-    }
-
-    .progress-step.active {
-      background: #F7941D;
-    }
-
-    .progress-step.done {
-      background: #22c55e;
-    }
-
-    .progress-label {
-      font-size: 12px;
-      opacity: 0.8;
-      margin-left: 8px;
-      white-space: nowrap;
-    }
-
-    /* Content Area */
-    .content {
-      flex: 1;
-      padding: 20px;
-      overflow-y: auto;
-      overflow-x: hidden;
-    }
-
-    .step {
-      display: none;
-      animation: fadeIn 0.3s ease;
-    }
-
-    .step.active {
-      display: block;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    /* Form Fields */
-    .form-group {
-      margin-bottom: 20px;
-    }
-
-    .form-label {
-      display: block;
-      font-weight: 600;
-      font-size: 14px;
-      margin-bottom: 8px;
-      color: #003087;
-    }
-
-    .form-label .required {
-      color: #ef4444;
-      margin-left: 2px;
-    }
-
-    .form-label .counter {
-      float: right;
-      font-weight: 400;
-      color: #999;
-      font-size: 13px;
-    }
-
-    input[type="text"],
-    input[type="date"],
-    textarea,
-    select {
-      width: 100%;
-      padding: 11px 12px;
-      border: 1px solid #d1d5db;
-      border-radius: 8px;
-      font-family: 'Sarabun', sans-serif;
-      font-size: 14px;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    input[type="text"]:focus,
-    input[type="date"]:focus,
-    textarea:focus,
-    select:focus {
-      outline: none;
-      border-color: #003087;
-      box-shadow: 0 0 0 3px rgba(0, 48, 135, 0.1);
-    }
-
-    textarea {
-      resize: vertical;
-      min-height: 100px;
-    }
-
-    /* Radio Buttons */
-    .radio-group {
-      display: flex;
-      gap: 12px;
-    }
-
-    .radio-option {
-      flex: 1;
-    }
-
-    .radio-option input[type="radio"] {
-      display: none;
-    }
-
-    .radio-label {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 12px;
-      border: 2px solid #d1d5db;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      font-size: 13px;
-      font-weight: 500;
-    }
-
-    .radio-option input[type="radio"]:checked + .radio-label {
-      border-color: #F7941D;
-      background: #fff8f2;
-    }
-
-    .radio-icon {
-      font-size: 20px;
-      margin-bottom: 4px;
-    }
-
-    /* Service Type Chips */
-    .chips-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .chip {
-      padding: 12px;
-      border: 2px solid #d1d5db;
-      border-radius: 8px;
-      background: white;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      text-align: center;
-      font-size: 13px;
-      font-weight: 500;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .chip:hover {
-      border-color: #F7941D;
-    }
-
-    .chip.selected {
-      border-color: #F7941D;
-      background: #fff8f2;
-      color: #F7941D;
-    }
-
-    .chip-icon {
-      font-size: 24px;
-    }
-
-    /* Example Pills */
-    .example-pills {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 10px;
-    }
-
-    .example-pill {
-      background: #f0f4f8;
-      border: 1px solid #d1d5db;
-      border-radius: 20px;
-      padding: 6px 12px;
-      font-size: 12px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .example-pill:hover {
-      background: #e3ebf5;
-      border-color: #003087;
-    }
-
-    /* Summary Card */
-    .summary-card {
-      background: #f9fafb;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      padding: 14px;
-      margin-bottom: 12px;
-    }
-
-    .summary-card-label {
-      font-size: 12px;
-      color: #6b7280;
-      font-weight: 500;
-      margin-bottom: 4px;
-    }
-
-    .summary-card-value {
-      font-size: 14px;
-      color: #1f2937;
-      font-weight: 500;
-      word-break: break-word;
-    }
-
-    .job-description-preview {
-      background: white;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      padding: 12px;
-      max-height: 150px;
-      overflow-y: auto;
-      font-size: 13px;
-      color: #374151;
-      line-height: 1.5;
-    }
-
-    /* Bottom Action Bar */
-    .action-bar {
-      display: flex;
-      gap: 10px;
-      padding: 20px;
-      background: white;
-      border-top: 1px solid #e5e7eb;
-      margin-top: auto;
-    }
-
-    .btn {
-      flex: 1;
-      padding: 12px 16px;
-      border: none;
-      border-radius: 8px;
-      font-family: 'Sarabun', sans-serif;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .btn-secondary {
-      background: #f3f4f6;
-      color: #6b7280;
-      border: 1px solid #d1d5db;
-    }
-
-    .btn-secondary:hover {
-      background: #e5e7eb;
-    }
-
-    .btn-primary {
-      background: #F7941D;
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background: #e88a18;
-    }
-
-    .btn-primary:disabled {
-      background: #d1d5db;
-      cursor: not-allowed;
-      opacity: 0.6;
-    }
-
-    /* Success Screen */
-    .success-screen {
-      display: none;
-      text-align: center;
-      padding: 40px 20px;
-      flex: 1;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .success-screen.active {
-      display: flex;
-    }
-
-    .success-icon {
-      font-size: 64px;
-      margin-bottom: 20px;
-      animation: bounce 2s infinite;
-    }
-
-    @keyframes bounce {
-      0%, 100% {
-        transform: translateY(0);
-      }
-      50% {
-        transform: translateY(-10px);
-      }
-    }
-
-    .success-title {
-      font-size: 20px;
-      font-weight: 700;
-      color: #003087;
-      margin-bottom: 10px;
-    }
-
-    .success-message {
-      font-size: 14px;
-      color: #6b7280;
-      margin-bottom: 20px;
-      line-height: 1.6;
-    }
-
-    .loading-dots {
-      display: flex;
-      gap: 4px;
-      justify-content: center;
-      margin-bottom: 20px;
-    }
-
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #F7941D;
-      animation: dot-bounce 1.4s infinite;
-    }
-
-    .dot:nth-child(1) {
-      animation-delay: 0s;
-    }
-
-    .dot:nth-child(2) {
-      animation-delay: 0.2s;
-    }
-
-    .dot:nth-child(3) {
-      animation-delay: 0.4s;
-    }
-
-    @keyframes dot-bounce {
-      0%, 80%, 100% {
-        opacity: 0.3;
-        transform: translateY(0);
-      }
-      40% {
-        opacity: 1;
-        transform: translateY(-10px);
-      }
-    }
-
-    .success-timer {
-      font-size: 12px;
-      color: #9ca3af;
-    }
-
-    /* Errors */
-    .error-banner {
-      display: none;
-      background: #fee2e2;
-      border: 1px solid #fca5a5;
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 16px;
-      color: #991b1b;
-      font-size: 13px;
-    }
-
-    .error-banner.show {
-      display: block;
-      animation: slideDown 0.3s ease;
-    }
-
-    @keyframes slideDown {
-      from {
-        opacity: 0;
-        transform: translateY(-10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    /* Toast Notification */
-    .toast {
-      position: fixed;
-      bottom: 20px;
-      left: 20px;
-      right: 20px;
-      background: #1f2937;
-      color: white;
-      padding: 12px 16px;
-      border-radius: 8px;
-      font-size: 13px;
-      display: none;
-      z-index: 100;
-      animation: slideUp 0.3s ease;
-    }
-
-    .toast.show {
-      display: block;
-    }
-
-    @keyframes slideUp {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    /* Responsive */
-    @media (max-width: 380px) {
-      .chips-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .radio-group {
-        flex-direction: column;
-      }
-
-      .action-bar {
-        flex-direction: column;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Utility Monitoring & Alert System — CONSERTECH</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --primary: #1B6B93;
+    --dark: #0D3B5E;
+    --accent: #2AABB8;
+    --danger: #D32F2F;
+    --warning: #F7941D;
+    --success: #388E3C;
+    --bg: #EFF3F7;
+    --card: #FFFFFF;
+    --text: #1E293B;
+    --muted: #64748B;
+    --border: #E2E8F0;
+    --pressure-color: #1565C0;
+    --flow-color: #00838F;
+    --temp-color: #C62828;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(135deg, #0A2540 0%, var(--primary) 60%, var(--accent) 100%);
+    color: white; padding: 0; box-shadow: 0 3px 12px rgba(0,0,0,0.2);
+  }
+  .header-top {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 32px;
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .logo-box {
+    width: 46px; height: 46px; border-radius: 10px; background: white;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 11px; color: var(--primary); line-height: 1.1; text-align: center;
+  }
+  .header h1 { font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
+  .header-sub { font-size: 11px; color: rgba(255,255,255,0.65); margin-top: 2px; letter-spacing: 1px; }
+  .header-right { display: flex; align-items: center; gap: 20px; }
+  .conn-status {
+    display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600;
+    padding: 4px 12px; border-radius: 20px; background: rgba(255,255,255,0.12);
+  }
+  .conn-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .conn-dot.live { background: #4CAF50; animation: pulse 2s infinite; }
+  .conn-dot.demo { background: #FF9800; }
+  .conn-dot.off { background: #F44336; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .clock { font-size: 13px; font-family: 'Consolas', monospace; color: rgba(255,255,255,0.85); }
+  .header-tagline {
+    background: rgba(0,0,0,0.15); padding: 6px 32px; font-size: 10px;
+    letter-spacing: 3px; color: rgba(255,255,255,0.5); text-transform: uppercase; text-align: center;
+  }
+
+  /* ── CONFIG BAR ── */
+  .config-bar {
+    background: linear-gradient(135deg, #E3F2FD, #E0F7FA); border: 1px solid #90CAF9;
+    border-radius: 10px; padding: 14px 20px; margin-bottom: 16px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  }
+  .config-bar.connected { background: linear-gradient(135deg, #E8F5E9, #F1F8E9); border-color: #A5D6A7; }
+  .config-label { font-size: 13px; font-weight: 600; color: var(--dark); }
+  .config-label small { font-weight: 400; color: var(--muted); display: block; font-size: 11px; }
+  .config-inputs { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .config-inputs input {
+    padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+    font-size: 12px; font-family: 'Consolas', monospace; width: 220px;
+  }
+  .config-inputs input:focus { outline: none; border-color: var(--primary); }
+
+  /* ── LAYOUT ── */
+  .container { max-width: 1440px; margin: 0 auto; padding: 20px 24px; }
+  .grid-sensors { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+  .grid-bottom { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+
+  /* ── DEMO CONTROLS ── */
+  .demo-bar {
+    background: linear-gradient(135deg, #FFF3E0, #FFE0B2); border: 1px solid #FFB74D;
+    border-radius: 10px; padding: 14px 20px; margin-bottom: 16px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  }
+  .demo-bar-label { font-size: 13px; font-weight: 600; color: #E65100; }
+  .demo-bar-label small { font-weight: 400; color: #BF360C; display: block; font-size: 11px; }
+  .demo-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn {
+    padding: 8px 16px; border: none; border-radius: 8px; font-size: 12px;
+    font-weight: 600; cursor: pointer; transition: all 0.2s;
+  }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-danger:hover:not(:disabled) { background: #B71C1C; }
+  .btn-warning { background: var(--warning); color: white; }
+  .btn-warning:hover:not(:disabled) { background: #E68A00; }
+  .btn-success { background: var(--success); color: white; }
+  .btn-success:hover:not(:disabled) { background: #2E7D32; }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover:not(:disabled) { background: var(--dark); }
+  .btn-outline { background: white; color: var(--primary); border: 1px solid var(--primary); }
+  .btn-outline:hover:not(:disabled) { background: var(--primary); color: white; }
+  .btn-sm { padding: 5px 10px; font-size: 11px; }
+
+  /* ── STATS ROW ── */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .stat-card {
+    background: var(--card); border-radius: 10px; padding: 14px 18px;
+    border: 1px solid var(--border); display: flex; align-items: center; gap: 14px;
+  }
+  .stat-icon {
+    width: 44px; height: 44px; border-radius: 10px; display: flex;
+    align-items: center; justify-content: center; font-size: 22px;
+  }
+  .stat-value { font-size: 24px; font-weight: 800; font-family: 'Consolas', monospace; }
+  .stat-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* ── SENSOR CARD ── */
+  .sensor-card {
+    background: var(--card); border-radius: 12px; padding: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid var(--border);
+    position: relative; overflow: hidden; transition: box-shadow 0.3s;
+  }
+  .sensor-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+  .sensor-card.alarm {
+    border-color: var(--danger); animation: alarm-flash 1s infinite;
+    box-shadow: 0 0 16px rgba(211,47,47,0.3);
+  }
+  .sensor-card.warning-state { border-color: var(--warning); box-shadow: 0 0 8px rgba(247,148,29,0.2); }
+  @keyframes alarm-flash { 0%,100% { background: #FFF5F5; } 50% { background: #FFEBEE; } }
+  .sensor-type-bar { position: absolute; top: 0; left: 0; right: 0; height: 4px; }
+  .bar-pressure { background: var(--pressure-color); }
+  .bar-temperature { background: var(--temp-color); }
+  .bar-flow { background: var(--flow-color); }
+  .sensor-header { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 4px; }
+  .sensor-tag { font-size: 16px; font-weight: 800; color: var(--dark); font-family: 'Consolas', monospace; }
+  .sensor-status {
+    font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .status-normal { background: #E8F5E9; color: var(--success); }
+  .status-alarm { background: #FFEBEE; color: var(--danger); }
+  .status-warning { background: #FFF3E0; color: var(--warning); }
+  .sensor-name { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .sensor-name-th { font-size: 11px; color: #94A3B8; }
+  .sensor-value { font-size: 40px; font-weight: 800; margin: 6px 0; font-family: 'Consolas', monospace; }
+  .sensor-unit { font-size: 15px; font-weight: 400; color: var(--muted); }
+  .sensor-range { font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.6; }
+  .sensor-range span { font-weight: 600; }
+  .mini-chart-wrap { height: 50px; margin-top: 10px; position: relative; overflow: hidden; }
+  .mini-chart { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+  /* ── GAUGE BAR ── */
+  .gauge-bar-container { margin-top: 10px; }
+  .gauge-bar-bg {
+    height: 8px; background: #E8ECF0; border-radius: 4px; position: relative; overflow: visible;
+  }
+  .gauge-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease, background 0.3s; position: relative; }
+  .gauge-bar-markers { display: flex; justify-content: space-between; margin-top: 3px; }
+  .gauge-bar-markers span { font-size: 9px; color: var(--muted); }
+  .threshold-line {
+    position: absolute; top: -3px; width: 2px; height: 14px; border-radius: 1px;
+  }
+  .threshold-line.hi { background: var(--danger); }
+  .threshold-line.lo { background: #1976D2; }
+  .threshold-line.warn { background: var(--warning); }
+
+  /* ── PANELS ── */
+  .panel {
+    background: var(--card); border-radius: 12px; padding: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid var(--border);
+  }
+  .panel-title {
+    font-size: 15px; font-weight: 700; color: var(--dark); margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .panel-title .icon { font-size: 18px; }
+  .alert-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .alert-table th {
+    text-align: left; padding: 8px 10px; background: var(--bg); color: var(--muted);
+    font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--border);
+  }
+  .alert-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .alert-table tr:hover { background: #F8FAFB; }
+  .severity-badge {
+    font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+    display: inline-block; text-transform: uppercase;
+  }
+  .sev-critical { background: #FFEBEE; color: var(--danger); }
+  .sev-warning { background: #FFF3E0; color: var(--warning); }
+  .status-badge {
+    font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px;
+    display: inline-block;
+  }
+  .st-open { background: #FFEBEE; color: var(--danger); }
+  .st-ack { background: #E3F2FD; color: #1565C0; }
+  .st-resolved { background: #E8F5E9; color: var(--success); }
+
+  /* ── LOG ── */
+  .log-item {
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-start; gap: 10px; font-size: 12px;
+  }
+  .log-item:last-child { border-bottom: none; }
+  .log-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+  .log-time { color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+  /* ── LINE PREVIEW ── */
+  .line-preview { background: #7BC67E; border-radius: 12px; padding: 16px; margin-top: 16px; }
+  .line-bubble {
+    background: white; border-radius: 16px; padding: 0; overflow: hidden;
+    max-width: 300px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 12px;
+  }
+  .line-bubble-header { padding: 12px 14px; color: white; font-weight: 700; font-size: 13px; }
+  .line-bubble-body { padding: 12px 14px; }
+  .line-bubble-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 11px; }
+  .line-bubble-row .label { color: #999; }
+  .line-bubble-row .val { font-weight: 600; }
+  .line-bubble-btn {
+    display: block; text-align: center; padding: 10px; font-weight: 700;
+    font-size: 13px; border-top: 1px solid #EEE; color: var(--primary);
+    text-decoration: none; cursor: pointer;
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    text-align: center; padding: 20px; color: var(--muted); font-size: 11px;
+    border-top: 1px solid var(--border); margin-top: 24px;
+  }
+  .footer a { color: var(--primary); text-decoration: none; }
+
+  /* ── TOAST ── */
+  .toast-container { position: fixed; top: 80px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    padding: 12px 20px; border-radius: 10px; color: white; font-size: 13px;
+    font-weight: 600; box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    animation: toastIn 0.3s ease; min-width: 280px;
+  }
+  .toast.success { background: var(--success); }
+  .toast.error { background: var(--danger); }
+  .toast.info { background: var(--primary); }
+  @keyframes toastIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  /* ── SETTINGS MODAL ── */
+  .settings-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:10000;
+    display:none; align-items:center; justify-content:center;
+  }
+  .settings-overlay.active { display:flex; }
+  .settings-modal {
+    background:#fff; border-radius:16px; width:92%; max-width:760px;
+    max-height:85vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.3);
+  }
+  .settings-header {
+    padding:20px 24px; border-bottom:1px solid var(--border);
+    display:flex; justify-content:space-between; align-items:center;
+    position:sticky; top:0; background:white; z-index:1; border-radius:16px 16px 0 0;
+  }
+  .settings-header h2 { font-size:18px; font-weight:700; margin:0; }
+  .settings-close {
+    background:none; border:none; font-size:24px; cursor:pointer;
+    color:var(--muted); padding:4px 8px; line-height:1;
+  }
+  .settings-body { padding:20px 24px; }
+  .settings-section { margin-bottom:24px; }
+  .settings-section h3 {
+    font-size:14px; font-weight:700; color:var(--dark);
+    margin-bottom:12px; border-bottom:2px solid var(--bg); padding-bottom:8px;
+  }
+  .settings-field { margin-bottom:12px; }
+  .settings-field label {
+    display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:4px;
+  }
+  .settings-field input[type=text] {
+    width:100%; padding:8px 12px; border:1px solid var(--border); border-radius:8px;
+    font-size:13px; font-family:'Consolas',monospace;
+  }
+  .settings-field input:focus { outline:none; border-color:var(--primary); }
+  .threshold-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .threshold-table th {
+    text-align:center; padding:8px 6px; background:var(--bg);
+    font-size:11px; color:var(--muted); font-weight:600;
+  }
+  .threshold-table td { padding:6px; border-bottom:1px solid var(--border); text-align:center; }
+  .threshold-table td:first-child { text-align:left; font-weight:600; font-size:12px; }
+  .threshold-table input[type=number] {
+    width:68px; padding:4px 6px; border:1px solid var(--border); border-radius:4px;
+    font-size:12px; text-align:center; font-family:'Consolas',monospace;
+  }
+  .threshold-table input[type=number]:focus { outline:none; border-color:var(--primary); }
+  .threshold-table input:disabled { background:var(--bg); color:var(--muted); }
+  .settings-footer {
+    padding:16px 24px; border-top:1px solid var(--border);
+    display:flex; justify-content:flex-end; gap:8px;
+    position:sticky; bottom:0; background:white; border-radius:0 0 16px 16px;
+  }
+  .btn-gear {
+    background:none; border:none; color:rgba(255,255,255,0.7); cursor:pointer;
+    font-size:18px; padding:6px 8px; border-radius:6px; transition:all 0.2s;
+  }
+  .btn-gear:hover { color:white; background:rgba(255,255,255,0.15); }
+  .auto-status {
+    font-size:12px; color:var(--muted); padding:8px 16px; background:var(--bg);
+    border-radius:8px; margin-bottom:16px; display:flex; align-items:center;
+    gap:8px; justify-content:space-between;
+  }
+  .auto-status.connected { background:#E8F5E9; color:var(--success); }
+  .auto-status a { color:var(--primary); cursor:pointer; font-size:11px; font-weight:600; text-decoration:none; }
+  .auto-status a:hover { text-decoration:underline; }
+
+  @media (max-width: 1024px) {
+    .grid-sensors { grid-template-columns: repeat(2, 1fr); }
+    .grid-bottom { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 640px) {
+    .grid-sensors { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: 1fr; }
+    .header-top { padding: 12px 16px; }
+    .container { padding: 12px; }
+  }
+</style>
 </head>
 <body>
-  <div class="app-container">
-    <!-- Header -->
-    <div class="header">
-      <h1>TOMAS TECH - Proposal Request</h1>
-      <p>ส่งแบบฟอร์มเสนอราคา / 提案リクエスト</p>
-      <div class="progress-container">
-        <div class="progress-step active" id="progressStep1"></div>
-        <div class="progress-step" id="progressStep2"></div>
-        <div class="progress-step" id="progressStep3"></div>
-        <span class="progress-label" id="progressLabel">Step 1/3</span>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <div class="header-left">
+      <div class="logo-box">CS</div>
+      <div>
+        <h1>Utility Monitoring & Alert System</h1>
+        <div class="header-sub">CONSERTECH CO., LTD. — ระบบติดตามและแจ้งเตือนความผิดปกติ</div>
       </div>
     </div>
-
-    <!-- Error Banner -->
-    <div class="error-banner" id="errorBanner"></div>
-
-    <!-- Content -->
-    <div class="content">
-      <!-- Step 1: Customer Info -->
-      <div class="step active" id="step1">
-        <div class="form-group">
-          <label class="form-label">Client Company Name <span class="required">*</span></label>
-          <input type="text" id="clientName" placeholder="e.g., ABC Manufacturing Ltd.">
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Contact Person <span class="required">*</span></label>
-          <input type="text" id="contactPerson" placeholder="e.g., Somchai Wongsan">
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Proposal Language <span class="required">*</span></label>
-          <div class="radio-group">
-            <div class="radio-option">
-              <input type="radio" id="langEN" name="language" value="en">
-              <label for="langEN" class="radio-label">
-                <span class="radio-icon">🇬🇧</span>
-                English
-              </label>
-            </div>
-            <div class="radio-option">
-              <input type="radio" id="langTH" name="language" value="th" checked>
-              <label for="langTH" class="radio-label">
-                <span class="radio-icon">🇹🇭</span>
-                ไทย
-              </label>
-            </div>
-            <div class="radio-option">
-              <input type="radio" id="langJA" name="language" value="ja">
-              <label for="langJA" class="radio-label">
-                <span class="radio-icon">🇯🇵</span>
-                日本語
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Service Type <span class="required">*</span></label>
-          <div class="chips-grid">
-            <div class="chip" data-service="WMS">
-              <span class="chip-icon">📦</span>
-              <span>WMS</span>
-            </div>
-            <div class="chip" data-service="MRP">
-              <span class="chip-icon">📋</span>
-              <span>MRP</span>
-            </div>
-            <div class="chip" data-service="MES">
-              <span class="chip-icon">🏭</span>
-              <span>MES</span>
-            </div>
-            <div class="chip" data-service="PLC">
-              <span class="chip-icon">⚙️</span>
-              <span>PLC</span>
-            </div>
-            <div class="chip" data-service="PEGASUS">
-              <span class="chip-icon">🖥️</span>
-              <span>PEGASUS</span>
-            </div>
-            <div class="chip" data-service="ASPROVA">
-              <span class="chip-icon">📊</span>
-              <span>ASPROVA</span>
-            </div>
-            <div class="chip" data-service="Infrastructure">
-              <span class="chip-icon">🌐</span>
-              <span>Infrastructure</span>
-            </div>
-            <div class="chip" data-service="Other">
-              <span class="chip-icon">✨</span>
-              <span>Other</span>
-            </div>
-          </div>
-        </div>
+    <div class="header-right">
+      <button class="btn-gear" onclick="openSettings()" title="Settings / ตั้งค่า">⚙️</button>
+      <div class="conn-status" id="conn-status">
+        <span class="conn-dot demo" id="conn-dot"></span>
+        <span id="conn-text">DEMO</span>
       </div>
-
-      <!-- Step 2: Job Details -->
-      <div class="step" id="step2">
-        <div class="form-group">
-          <label class="form-label">
-            Job Description <span class="required">*</span>
-            <span class="counter"><span id="charCount">0</span>/2000</span>
-          </label>
-          <textarea id="jobDescription" placeholder="Describe your project needs, challenges, and requirements..."></textarea>
-          <div class="example-pills" id="examplePills"></div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Project Name</label>
-          <input type="text" id="projectName" placeholder="e.g., Warehouse System Upgrade">
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Budget Range</label>
-          <select id="budgetRange">
-            <option value="">Not yet specified.</option>
-            <option value="below-500k">less than 500,000 THB</option>
-            <option value="500k-1m">500,000 - 1,000,000 THB</option>
-            <option value="1m-3m">1,000,000 - 3,000,000 THB</option>
-            <option value="3m-5m">3,000,000 - 5,000,000 THB</option>
-            <option value="5m-10m">5,000,000 - 10,000,000 THB</option>
-            <option value="10m-plus">10,000,000 THB or more</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Deadline (Optional)</label>
-          <input type="date" id="deadline">
-        </div>
-      </div>
-
-      <!-- Step 3: Confirm -->
-      <div class="step" id="step3">
-        <h3 style="font-size: 16px; font-weight: 600; color: #003087; margin-bottom: 16px;">Review Your Information</h3>
-
-        <div class="summary-card">
-          <div class="summary-card-label">Client Company Name</div>
-          <div class="summary-card-value" id="summary-clientName">-</div>
-        </div>
-
-        <div class="summary-card">
-          <div class="summary-card-label">Contact Person</div>
-          <div class="summary-card-value" id="summary-contactPerson">-</div>
-        </div>
-
-        <div class="summary-card">
-          <div class="summary-card-label">Language</div>
-          <div class="summary-card-value" id="summary-language">-</div>
-        </div>
-
-        <div class="summary-card">
-          <div class="summary-card-label">Service Type</div>
-          <div class="summary-card-value" id="summary-serviceType">-</div>
-        </div>
-
-        <div class="summary-card">
-          <div class="summary-card-label">Project Name</div>
-          <div class="summary-card-value" id="summary-projectName">-</div>
-        </div>
-
-        <div class="summary-card">
-          <div class="summary-card-label">Budget Range</div>
-          <div class="summary-card-value" id="summary-budgetRange">-</div>
-        </div>
-
-        <div class="summary-card">
-          <div class="summary-card-label">Deadline</div>
-          <div class="summary-card-value" id="summary-deadline">-</div>
-        </div>
-
-        <div class="summary-card">
-          <div class="summary-card-label">Job Description</div>
-          <div class="job-description-preview" id="summary-jobDescription">-</div>
-        </div>
-      </div>
-
-      <!-- Success Screen -->
-      <div class="success-screen" id="successScreen">
-        <div class="success-icon">🚀</div>
-        <div class="success-title">Data submitted successfully!</div>
-        <div class="success-message">
-          AI is analyzing the data. You will receive a summary in LINE soon.
-        </div>
-        <div class="loading-dots">
-          <div class="dot"></div>
-          <div class="dot"></div>
-          <div class="dot"></div>
-        </div>
-        <div class="success-timer">Approximately 30 seconds — You can close this page now.</div>
-      </div>
+      <div class="clock" id="clock">--:--:--</div>
     </div>
+  </div>
+  <div class="header-tagline">CONSULT &nbsp;&bull;&nbsp; SERVICE &nbsp;&bull;&nbsp; TECHNOLOGY</div>
+</div>
 
-    <!-- Action Bar -->
-    <div class="action-bar">
-      <button class="btn btn-secondary" id="backBtn" style="display: none;" onclick="previousStep()">← Back</button>
-      <button class="btn btn-primary" id="nextBtn" onclick="nextStep()">Next →</button>
+<!-- TOAST -->
+<div class="toast-container" id="toast-container"></div>
+
+<div class="container">
+
+  <!-- AUTO-STATUS BAR -->
+  <div class="auto-status" id="auto-status">
+    <span id="auto-status-text">🔌 Demo Mode — กด ⚙️ เพื่อตั้งค่า API Key และเชื่อมต่อระบบจริง</span>
+    <a onclick="openSettings()">⚙️ Settings</a>
+  </div>
+
+  <!-- DEMO CONTROLS -->
+  <div class="demo-bar">
+    <div class="demo-bar-label">
+      Sensor Simulator — จำลองสถานการณ์
+      <small>กดปุ่มเพื่อส่งค่าเซนเซอร์ (Live Mode = ส่งจริงผ่าน API + แจ้ง LINE)</small>
+    </div>
+    <div class="demo-buttons">
+      <button class="btn btn-danger" onclick="triggerAlarm('pressure')">Pressure Alarm</button>
+      <button class="btn btn-warning" onclick="triggerAlarm('temperature')">Temp Warning</button>
+      <button class="btn btn-danger" onclick="triggerAlarm('flow')">Flow Alarm</button>
+      <button class="btn btn-success" onclick="sendNormalValues()">Send Normal</button>
+      <button class="btn btn-primary" onclick="acknowledgeLatest()">Acknowledge</button>
+      <button class="btn btn-success" onclick="resolveLatest()">Resolve</button>
+      <button class="btn btn-outline" onclick="resetAll()">Reset</button>
     </div>
   </div>
 
-  <!-- Toast -->
-  <div class="toast" id="toast"></div>
+  <!-- STATS ROW -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#E3F2FD; color:var(--primary);">📡</div>
+      <div><div class="stat-value" id="stat-sensors">6</div><div class="stat-label">Active Sensors / จุดตรวจวัด</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#FFEBEE; color:var(--danger);">🔔</div>
+      <div><div class="stat-value" id="stat-alerts">0</div><div class="stat-label">Open Alerts / แจ้งเตือน</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#E8F5E9; color:var(--success);">✅</div>
+      <div><div class="stat-value" id="stat-resolved">0</div><div class="stat-label">Resolved Today / แก้ไขแล้ว</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#FFF3E0; color:var(--warning);">⏱️</div>
+      <div><div class="stat-value" id="stat-avgtime">—</div><div class="stat-label">Avg Response (min)</div></div>
+    </div>
+  </div>
 
-  <script>
-    // CONFIG
-    const CONFIG = {
-      LIFF_ID: '2009680907-XvJSLuFn',
-      WEBHOOK_URL: 'https://horakomapp.app.n8n.cloud/webhook/proposal-form',
-      SUPABASE_URL: 'https://hsmawbvxhlkssdowlbzx.supabase.co',
-      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhzbWF3YnZ4aGxrc3Nkb3dsYnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMjMwNDQsImV4cCI6MjA5MDY5OTA0NH0.RVBNzQvB3IraqJfZ-SbDHW-C7cNKO9pc4qPbANLpJKU'
-    };
+  <!-- SENSOR CARDS -->
+  <div class="grid-sensors" id="sensor-grid"></div>
 
-    // State
-    let currentStep = 1;
-    let formData = {
-      client_name: '',
-      contact_person: '',
-      language: 'th',
-      service_type: '',
-      job_description: '',
-      project_name: '',
-      budget_range: '',
-      deadline: '',
-      line_user_id: '',
-      line_group_id: ''
-    };
+  <!-- BOTTOM GRID -->
+  <div class="grid-bottom">
+    <div class="panel">
+      <div class="panel-title"><span class="icon">🚨</span> Alert History / ประวัติการแจ้งเตือน</div>
+      <table class="alert-table">
+        <thead>
+          <tr><th>Time</th><th>Sensor</th><th>Value</th><th>Threshold</th><th>Severity</th><th>Status</th><th>Action</th></tr>
+        </thead>
+        <tbody id="alert-tbody"></tbody>
+      </table>
+      <div id="no-alerts" style="text-align:center; padding:30px; color:var(--muted); font-size:13px;">
+        ไม่มีการแจ้งเตือน — All sensors operating normally
+      </div>
+    </div>
 
-    let liffProfile = null;
-    let liffContext = null;
+    <div>
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-title"><span class="icon">💬</span> LINE Alert Preview</div>
+        <div id="line-preview-area">
+          <div style="text-align:center; padding:20px; color:var(--muted); font-size:12px;">
+            กดปุ่ม Alarm เพื่อดูตัวอย่างข้อความ LINE
+          </div>
+        </div>
+      </div>
 
-    // Examples for each service type
-    const examplesMap = {
-      WMS: [
-        'We have 50,000 SKUs with multiple handhelds',
-        'Need integration with SAP system',
-        'Current system slow during peak hours'
-      ],
-      MRP: [
-        'Complex BOM with 500+ part numbers',
-        'Production planning for 3 shifts',
-        'Material shortage tracking issues'
-      ],
-      MES: [
-        'Real-time OEE monitoring needed',
-        'Quality record digitization',
-        'Track downtime for 20 production lines'
-      ],
-      PLC: [
-        'Upgrade sensors to Industry 4.0',
-        'Real-time data collection',
-        'Connect to control systems'
-      ],
-      PEGASUS: [
-        'Production scheduling optimization',
-        'Reduce makespan by 20%',
-        'Integrate with existing MES'
-      ],
-      ASPROVA: [
-        'Advanced production planning',
-        'Constraint-based scheduling',
-        'Supply chain visibility'
-      ],
-      Infrastructure: [
-        'Cloud migration project',
-        'Data center setup',
-        'Network infrastructure upgrade'
-      ],
-      Other: [
-        'Describe your specific needs'
-      ]
-    };
+      <div class="panel">
+        <div class="panel-title"><span class="icon">📋</span> Activity Log</div>
+        <div id="maint-log">
+          <div style="text-align:center; padding:20px; color:var(--muted); font-size:12px;">
+            ยังไม่มีกิจกรรม
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-    // Detect if running inside LINE app or standalone browser (PC/Desktop)
-    function isRunningInLINE() {
-      const ua = navigator.userAgent || '';
-      return ua.includes('Line/') || ua.includes('LIFF');
-    }
+<!-- FOOTER -->
+<div class="footer">
+  CONSERTECH CO., LTD. — Utility Monitoring & Alert System<br>
+  CONSULT &bull; SERVICE &bull; TECHNOLOGY &nbsp;|&nbsp;
+  <a href="https://www.cs-th.com" target="_blank">www.cs-th.com</a> &nbsp;|&nbsp; info@cs-th.com
+</div>
 
-    // Initialize — LIFF for LINE app, standalone for PC browser
-    async function initLIFF() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const editId = urlParams.get('edit');
-      
-      // ── Read uid/gid from URL params (sent by n8n Flex Message for PC) ──
-      const urlUid = urlParams.get('uid');
-      const urlGid = urlParams.get('gid');
-      if (urlUid) formData.line_user_id = urlUid;
-      if (urlGid) formData.line_group_id = urlGid;
+<!-- SETTINGS MODAL -->
+<div class="settings-overlay" id="settings-overlay" onclick="if(event.target===this)closeSettings()">
+  <div class="settings-modal">
+    <div class="settings-header">
+      <h2>⚙️ Settings / ตั้งค่าระบบ</h2>
+      <button class="settings-close" onclick="closeSettings()">&times;</button>
+    </div>
+    <div class="settings-body">
+      <div class="settings-section">
+        <h3>🔗 API Connection</h3>
+        <div class="settings-field">
+          <label>INGEST API KEY</label>
+          <input type="text" id="settings-api-key" placeholder="ใส่ API Key สำหรับเชื่อมต่อระบบจริง">
+        </div>
+        <div class="settings-field">
+          <label>LINE USER ID (สำหรับแจ้งเตือน)</label>
+          <input type="text" id="settings-line-uid" placeholder="Uxxxxxx">
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3>📊 Sensor Thresholds / ค่าเกณฑ์แจ้งเตือน</h3>
+        <p style="font-size:11px; color:var(--muted); margin-bottom:12px;">ปรับค่าเกณฑ์การแจ้งเตือนของแต่ละเซนเซอร์ (ใช้ในหน้า Dashboard)</p>
+        <table class="threshold-table">
+          <thead>
+            <tr>
+              <th>Sensor</th>
+              <th>Unit</th>
+              <th>Warn Low</th>
+              <th>Warn High</th>
+              <th>Alarm Low</th>
+              <th>Alarm High</th>
+              <th>Nominal</th>
+            </tr>
+          </thead>
+          <tbody id="threshold-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="settings-footer">
+      <button class="btn btn-outline" onclick="closeSettings()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSettings()">💾 Save & Apply</button>
+    </div>
+  </div>
+</div>
 
-      if (isRunningInLINE()) {
-        // ── Running inside LINE app → use LIFF ──
-        try {
-          await liff.init({ liffId: CONFIG.LIFF_ID });
+<script>
+// ══════════════════════════════════════════════
+//  CONFIG — ตั้งค่า API
+// ══════════════════════════════════════════════
+const CONFIG = {
+  BASE_URL: '',  // empty = same origin (auto-detect)
+  API_KEY: '',
+  LINE_USER_ID: 'U667a6f23628a051a262e599511abd1c3',
+  POLL_INTERVAL: 3000,  // ms
+  isLive: false,
+};
 
-          if (!liff.isLoggedIn()) {
-            liff.login({ redirectUri: window.location.href });
-            return;
-          }
+// ══════════════════════════════════════════════
+//  SENSOR DEFINITIONS — from Proposal Rev.01
+// ══════════════════════════════════════════════
+const SENSORS = [
+  {
+    id: 'PT-01', name: 'Compressed Air Header', nameTH: 'แรงดันลมอัดหลัก',
+    type: 'pressure', unit: 'bar', min: 0, max: 10,
+    warnLow: 5.8, warnHigh: 8.5, alarmLow: 5.5, alarmHigh: 9.0,
+    nominal: 7.0,
+  },
+  {
+    id: 'PT-02', name: 'Chilled Water Pump Discharge', nameTH: 'แรงดันน้ำเย็น',
+    type: 'pressure', unit: 'bar', min: 0, max: 6,
+    warnLow: 2.2, warnHigh: 4.5, alarmLow: 2.0, alarmHigh: 5.0,
+    nominal: 3.3,
+  },
+  {
+    id: 'FT-01', name: 'Cooling Water Line', nameTH: 'อัตราการไหลน้ำหล่อเย็น',
+    type: 'flow', unit: 'm³/h', min: 0, max: 200,
+    warnLow: 100, warnHigh: 170, alarmLow: 85, alarmHigh: 185,
+    nominal: 135,
+  },
+  {
+    id: 'FT-02', name: 'Process Water Line', nameTH: 'อัตราการไหลน้ำกระบวนการ',
+    type: 'flow', unit: 'm³/h', min: 0, max: 120,
+    warnLow: 55, warnHigh: 100, alarmLow: 45, alarmHigh: 110,
+    nominal: 77,
+  },
+  {
+    id: 'TT-01', name: 'Chiller Outlet', nameTH: 'อุณหภูมิน้ำออกจากชิลเลอร์',
+    type: 'temperature', unit: '°C', min: -10, max: 50,
+    warnLow: 6, warnHigh: 12, alarmLow: 4, alarmHigh: 14,
+    nominal: 9,
+  },
+  {
+    id: 'TT-02', name: 'Mixer Cooling Return', nameTH: 'อุณหภูมิน้ำหล่อเย็นขากลับ',
+    type: 'temperature', unit: '°C', min: 0, max: 100,
+    warnLow: null, warnHigh: 36, alarmLow: null, alarmHigh: 40,
+    nominal: 28,
+  },
+];
 
-          liffProfile = await liff.getProfile();
-          formData.line_user_id = liffProfile.userId;
+// ══════════════════════════════════════════════
+//  SETTINGS (localStorage persistence)
+// ══════════════════════════════════════════════
+const SETTINGS_KEY = 'consertech_sensor_settings';
 
-          try {
-            liffContext = liff.getContext();
-            if (liffContext && liffContext.groupId) {
-              formData.line_group_id = liffContext.groupId;
-            } else if (liffContext && liffContext.roomId) {
-              formData.line_group_id = liffContext.roomId;
-            }
-          } catch (e) {
-            console.log('Context not available');
-          }
-        } catch (error) {
-          console.error('LIFF init error:', error);
-        if (!formData.line_user_id) formData.line_user_id = 'liff_fallback_' + Date.now();
-        }
-      } else {
-        // ── Running on PC/Desktop browser → standalone mode ──
-        console.log('🖥️ Desktop mode — form works standalone');
-        if (!formData.line_user_id) formData.line_user_id = 'web_user_' + Date.now();
-
-        // If uid/gid received via URL, LINE can reply after form submit
-        if (urlUid && urlGid) {
-          console.log('✅ LINE context received via URL params — results will be sent to LINE');
-        }
-        
-        // Try LIFF init silently (might work if user logged in before)
-        try {
-          await liff.init({ liffId: CONFIG.LIFF_ID });
-          if (liff.isLoggedIn()) {
-            const profile = await liff.getProfile();
-            formData.line_user_id = profile.userId;
-            console.log('LIFF login detected on desktop, using LINE profile');
-          }
-        } catch (e) {
-          console.log('LIFF not available on desktop — using standalone mode');
-        }
-      }
-
-      // Check for edit mode (works both on LINE and Desktop)
-      if (editId) {
-        await loadProposalForEdit(editId);
-      }
-    }
-
-    // Load proposal for edit — fetch from Supabase and pre-fill form
-    async function loadProposalForEdit(requestId) {
-      console.log('Loading proposal for edit:', requestId);
-      try {
-        const res = await fetch(
-          `${CONFIG.SUPABASE_URL}/rest/v1/proposal_requests?id=eq.${requestId}&select=*`,
-          {
-            headers: {
-              'apikey': CONFIG.SUPABASE_ANON_KEY,
-              'Authorization': 'Bearer ' + CONFIG.SUPABASE_ANON_KEY
-            }
-          }
-        );
-        if (!res.ok) throw new Error('Failed to fetch proposal');
-        const rows = await res.json();
-        if (!rows || rows.length === 0) {
-          showToast('No proposal information found.');
-          return;
-        }
-        const data = rows[0];
-
-        // Pre-fill formData
-        formData.client_name = data.client_name || '';
-        formData.contact_person = data.contact_person || '';
-        formData.language = data.language || 'th';
-        formData.service_type = data.service_type || '';
-        formData.job_description = data.job_description || '';
-        formData.project_name = data.project_name || '';
-        formData.budget_range = data.budget_range || '';
-        formData.deadline = data.deadline || '';
-        formData.line_user_id = data.line_user_id || formData.line_user_id;
-        formData.line_group_id = data.line_group_id || formData.line_group_id;
-
-        // Store edit ID so we can update instead of create
-        formData._editId = requestId;
-
-        // Pre-fill UI elements
-        const el = (id) => document.getElementById(id);
-        if (el('clientName')) el('clientName').value = formData.client_name;
-        if (el('contactPerson')) el('contactPerson').value = formData.contact_person;
-        if (el('jobDescription')) {
-          el('jobDescription').value = formData.job_description;
-          if (el('charCount')) el('charCount').textContent = formData.job_description.length;
-        }
-        if (el('projectName')) el('projectName').value = formData.project_name;
-        if (el('budgetRange')) el('budgetRange').value = formData.budget_range;
-        if (el('deadline')) el('deadline').value = formData.deadline;
-
-        // Pre-select service type chip
-        if (formData.service_type) {
-          document.querySelectorAll('.chip').forEach(chip => {
-            chip.classList.remove('selected');
-            if (chip.dataset.service === formData.service_type) {
-              chip.classList.add('selected');
-            }
-          });
-        }
-
-        // Pre-select language radio
-        if (formData.language) {
-          const radio = document.querySelector(`input[name="language"][value="${formData.language}"]`);
-          if (radio) radio.checked = true;
-        }
-
-        // Update example pills
-        if (typeof updateExamplePills === 'function') updateExamplePills();
-
-        showToast('Original data has been successfully loaded and is ready for editing.');
-        console.log('Proposal loaded for edit:', data);
-      } catch (error) {
-        console.error('Load proposal error:', error);
-        showToast('The proposal data could not be loaded.');
-      }
-    }
-
-    // Setup event listeners
-    function setupEventListeners() {
-      // Character counter
-      document.getElementById('jobDescription').addEventListener('input', (e) => {
-        const count = e.target.value.length;
-        document.getElementById('charCount').textContent = count;
-        updateExamplePills();
-      });
-
-      // Service type selection
-      document.querySelectorAll('.chip').forEach(chip => {
-        chip.addEventListener('click', () => {
-          document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
-          chip.classList.add('selected');
-          formData.service_type = chip.dataset.service;
-          updateExamplePills();
-        });
-      });
-
-      // Language selection
-      document.querySelectorAll('input[name="language"]').forEach(radio => {
-        radio.addEventListener('change', (e) => {
-          formData.language = e.target.value;
-        });
+function loadSettings() {
+  try {
+    const saved = localStorage.getItem(SETTINGS_KEY);
+    if (!saved) return false;
+    const s = JSON.parse(saved);
+    if (s.apiKey) CONFIG.API_KEY = s.apiKey;
+    if (s.lineUserId) CONFIG.LINE_USER_ID = s.lineUserId;
+    // Restore thresholds
+    if (s.thresholds) {
+      s.thresholds.forEach(t => {
+        const sensor = SENSORS.find(x => x.id === t.id);
+        if (!sensor) return;
+        if (t.warnLow !== undefined) sensor.warnLow = t.warnLow;
+        if (t.warnHigh !== undefined) sensor.warnHigh = t.warnHigh;
+        if (t.alarmLow !== undefined) sensor.alarmLow = t.alarmLow;
+        if (t.alarmHigh !== undefined) sensor.alarmHigh = t.alarmHigh;
+        if (t.nominal !== undefined) sensor.nominal = t.nominal;
       });
     }
+    return !!s.apiKey;
+  } catch (e) { return false; }
+}
 
-    // Update example pills
-    function updateExamplePills() {
-      const container = document.getElementById('examplePills');
-      container.innerHTML = '';
+function saveSettingsToStorage() {
+  const s = {
+    apiKey: CONFIG.API_KEY,
+    lineUserId: CONFIG.LINE_USER_ID,
+    thresholds: SENSORS.map(x => ({
+      id: x.id,
+      warnLow: x.warnLow, warnHigh: x.warnHigh,
+      alarmLow: x.alarmLow, alarmHigh: x.alarmHigh,
+      nominal: x.nominal,
+    })),
+  };
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+}
 
-      if (!formData.service_type) return;
+function openSettings() {
+  document.getElementById('settings-api-key').value = CONFIG.API_KEY || '';
+  document.getElementById('settings-line-uid').value = CONFIG.LINE_USER_ID || '';
+  // Populate threshold table
+  const tbody = document.getElementById('threshold-tbody');
+  tbody.innerHTML = SENSORS.map(s => {
+    const noLow = s.alarmLow === null && s.warnLow === null;
+    return `<tr>
+      <td>${s.id}<br><span style="font-weight:400;font-size:10px;color:var(--muted)">${s.nameTH}</span></td>
+      <td>${s.unit}</td>
+      <td><input type="number" step="0.1" data-id="${s.id}" data-field="warnLow" value="${s.warnLow ?? ''}" ${s.warnLow === null ? 'disabled placeholder="N/A"' : ''}></td>
+      <td><input type="number" step="0.1" data-id="${s.id}" data-field="warnHigh" value="${s.warnHigh ?? ''}"></td>
+      <td><input type="number" step="0.1" data-id="${s.id}" data-field="alarmLow" value="${s.alarmLow ?? ''}" ${s.alarmLow === null ? 'disabled placeholder="N/A"' : ''}></td>
+      <td><input type="number" step="0.1" data-id="${s.id}" data-field="alarmHigh" value="${s.alarmHigh ?? ''}"></td>
+      <td><input type="number" step="0.1" data-id="${s.id}" data-field="nominal" value="${s.nominal}"></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('settings-overlay').classList.add('active');
+}
 
-      const examples = examplesMap[formData.service_type] || [];
-      examples.forEach(example => {
-        const pill = document.createElement('div');
-        pill.className = 'example-pill';
-        pill.textContent = example;
-        pill.addEventListener('click', () => {
-          const textarea = document.getElementById('jobDescription');
-          textarea.value = example;
-          textarea.dispatchEvent(new Event('input'));
-        });
-        container.appendChild(pill);
-      });
-    }
+function closeSettings() {
+  document.getElementById('settings-overlay').classList.remove('active');
+}
 
-    // Navigation
-    function nextStep() {
-      saveFormData();
-      if (!validateCurrentStep()) return;
+function saveSettings() {
+  const apiKey = document.getElementById('settings-api-key').value.trim();
+  const lineUid = document.getElementById('settings-line-uid').value.trim();
+  CONFIG.API_KEY = apiKey;
+  if (lineUid) CONFIG.LINE_USER_ID = lineUid;
 
-      if (currentStep < 3) {
-        goToStep(currentStep + 1);
-      } else if (currentStep === 3) {
-        submitForm();
-      }
-    }
+  // Read threshold values
+  document.querySelectorAll('#threshold-tbody input[type=number]').forEach(inp => {
+    if (inp.disabled) return;
+    const sensor = SENSORS.find(s => s.id === inp.dataset.id);
+    if (!sensor) return;
+    const val = parseFloat(inp.value);
+    if (!isNaN(val)) sensor[inp.dataset.field] = val;
+  });
 
-    function previousStep() {
-      if (currentStep > 1) {
-        goToStep(currentStep - 1);
-      }
-    }
+  saveSettingsToStorage();
 
-    function goToStep(step) {
-      // Save form data
-      saveFormData();
+  // Reconnect or disconnect based on API key
+  if (apiKey) {
+    CONFIG.isLive = true;
+    updateConnectionUI();
+    updateAutoStatus();
+    showToast('✅ Settings saved — Live Mode', 'success');
+    fetchDashboardData();
+  } else {
+    CONFIG.isLive = false;
+    updateConnectionUI();
+    updateAutoStatus();
+    showToast('Settings saved — Demo Mode', 'info');
+  }
 
-      currentStep = step;
+  // Rebuild cards to apply new thresholds
+  buildSensorCards();
+  closeSettings();
+}
 
-      // Hide all steps
-      document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
-      document.getElementById(`step${step}`).classList.add('active');
+function updateAutoStatus() {
+  const bar = document.getElementById('auto-status');
+  const text = document.getElementById('auto-status-text');
+  if (CONFIG.isLive) {
+    bar.classList.add('connected');
+    text.textContent = '🟢 Connected — Live Mode (ส่งค่าจริง + แจ้ง LINE)';
+  } else {
+    bar.classList.remove('connected');
+    text.textContent = '🔌 Demo Mode — กด ⚙️ เพื่อตั้งค่า API Key และเชื่อมต่อระบบจริง';
+  }
+}
 
-      // Update progress bar
-      updateProgressBar();
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+const sensorData = {};
+const sensorHistories = {};
+const charts = {};
+const alerts = [];
+let resolvedCount = 0;
+let pollTimer = null;
 
-      // Update buttons
-      document.getElementById('backBtn').style.display = step > 1 ? 'block' : 'none';
-      document.getElementById('nextBtn').textContent = step === 3 ? 'Submit' : 'Next →';
+SENSORS.forEach(s => {
+  sensorData[s.id] = { value: s.nominal, status: 'normal', alarm: false };
+  sensorHistories[s.id] = Array(30).fill(null).map(() =>
+    s.nominal + (Math.random() - 0.5) * ((s.warnHigh || s.nominal * 1.2) - (s.warnLow || s.nominal * 0.8)) * 0.2
+  );
+});
 
-      // Update summary on step 3
-      if (step === 3) {
-        updateSummary();
-      }
+// ══════════════════════════════════════════════
+//  API CONNECTION
+// ══════════════════════════════════════════════
+function connectAPI() {
+  if (!CONFIG.API_KEY) { showToast('กรุณาตั้ง API Key ใน Settings ก่อน', 'error'); openSettings(); return; }
+  CONFIG.isLive = true;
+  saveSettingsToStorage();
+  updateConnectionUI();
+  updateAutoStatus();
+  showToast('เชื่อมต่อ API สำเร็จ — Live Mode', 'success');
+  addMaintLog('🔗 Connected to live API — ส่งค่าจริงผ่าน LINE', 'var(--success)');
+  fetchDashboardData();
+  fetchAlertHistory();
+}
 
-      // Scroll to top
-      document.querySelector('.content').scrollTop = 0;
+function disconnectAPI() {
+  CONFIG.isLive = false;
+  updateConnectionUI();
+  updateAutoStatus();
+  showToast('Demo Mode — ไม่ส่ง API จริง', 'info');
+  addMaintLog('🔌 Switched to Demo Mode', 'var(--muted)');
+}
 
-      // Clear errors
-      hideError();
-    }
+function updateConnectionUI() {
+  const dot = document.getElementById('conn-dot');
+  const text = document.getElementById('conn-text');
+  if (CONFIG.isLive) {
+    dot.className = 'conn-dot live';
+    text.textContent = 'LIVE';
+  } else {
+    dot.className = 'conn-dot demo';
+    text.textContent = 'DEMO';
+  }
+}
 
-    function updateProgressBar() {
-      const steps = ['progressStep1', 'progressStep2', 'progressStep3'];
-      steps.forEach((step, index) => {
-        const element = document.getElementById(step);
-        if (index + 1 < currentStep) {
-          element.classList.remove('active');
-          element.classList.add('done');
-        } else if (index + 1 === currentStep) {
-          element.classList.add('active');
-          element.classList.remove('done');
-        } else {
-          element.classList.remove('active', 'done');
-        }
-      });
-      document.getElementById('progressLabel').textContent = `Step ${currentStep}/3`;
-    }
+// ══════════════════════════════════════════════
+//  API CALLS
+// ══════════════════════════════════════════════
+async function apiPost(endpoint, body) {
+  const url = (CONFIG.BASE_URL || '') + endpoint;
+  const headers = { 'Content-Type': 'application/json' };
+  if (CONFIG.API_KEY) headers['x-api-key'] = CONFIG.API_KEY;
+  const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
 
-    function saveFormData() {
-      try {
-        const el = (id) => document.getElementById(id);
-        if (el('clientName')) formData.client_name = el('clientName').value;
-        if (el('contactPerson')) formData.contact_person = el('contactPerson').value;
-        const langChecked = document.querySelector('input[name="language"]:checked');
-        if (langChecked) formData.language = langChecked.value;
-        if (el('jobDescription')) formData.job_description = el('jobDescription').value;
-        if (el('projectName')) formData.project_name = el('projectName').value;
-        if (el('budgetRange')) formData.budget_range = el('budgetRange').value;
-        if (el('deadline')) formData.deadline = el('deadline').value;
-      } catch (e) {
-        console.error('saveFormData error:', e);
-      }
-    }
+async function apiGet(endpoint) {
+  const url = (CONFIG.BASE_URL || '') + endpoint;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
 
-    function updateSummary() {
-      document.getElementById('summary-clientName').textContent = formData.client_name || '-';
-      document.getElementById('summary-contactPerson').textContent = formData.contact_person || '-';
-      document.getElementById('summary-language').textContent =
-        formData.language === 'en' ? 'English' : formData.language === 'th' ? 'ไทย' : '日本語';
-      document.getElementById('summary-serviceType').textContent = formData.service_type || '-';
-      document.getElementById('summary-projectName').textContent = formData.project_name || '-';
-      document.getElementById('summary-budgetRange').textContent = formData.budget_range || '-';
-      document.getElementById('summary-deadline').textContent = formData.deadline || '-';
-      document.getElementById('summary-jobDescription').textContent = formData.job_description || '-';
-    }
+async function sendSensorValue(sensorId, value) {
+  if (!CONFIG.isLive) return null;
+  try {
+    const result = await apiPost('/api/sensor-ingest', { sensor_id: sensorId, value });
+    return result;
+  } catch (err) {
+    showToast(`API Error: ${err.message}`, 'error');
+    return null;
+  }
+}
 
-    // Validation
-    function validateCurrentStep() {
-      hideError();
-
-      if (currentStep === 1) {
-        if (!formData.service_type) {
-          showError('Please select a Service Type');
-          return false;
-        }
-      } else if (currentStep === 2) {
-        if (!formData.job_description.trim()) {
-          showError('Please enter Job Description');
-          return false;
-        }
-        if (formData.job_description.length < 20) {
-          showError('Job Description must be at least 20 characters');
-          return false;
-        }
-        if (formData.job_description.length > 2000) {
-          showError('Job Description must not exceed 2000 characters');
-          return false;
-        }
-      }
-
-      return true;
-    }
-
-    // Form Submission
-    async function submitForm() {
-      saveFormData();
-
-      // Hide all steps, show success screen
-      document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
-      document.getElementById('successScreen').classList.add('active');
-      document.querySelector('.action-bar').style.display = 'none';
-
-      // Add LIFF user info if available
-      try {
-        if (typeof liff !== 'undefined' && liff.isLoggedIn && liff.isLoggedIn()) {
-          const profile = await liff.getProfile();
-          formData.line_user_id = profile.userId;
-        }
-      } catch (e) {
-        console.log('Could not get LIFF profile:', e);
-      }
-
-      try {
-        console.log('Submitting form data:', JSON.stringify(formData));
-
-        if (formData._editId) {
-          // EDIT MODE: Update existing record in Supabase directly
-          const updateData = {
-            client_name: formData.client_name,
-            contact_person: formData.contact_person,
-            language: formData.language,
-            service_type: formData.service_type,
-            job_description: formData.job_description,
-            project_name: formData.project_name,
-            budget_range: formData.budget_range,
-            deadline: formData.deadline || null,
-            status: 'pending_confirm'
-          };
-          const res = await fetch(
-            `${CONFIG.SUPABASE_URL}/rest/v1/proposal_requests?id=eq.${formData._editId}`,
-            {
-              method: 'PATCH',
-              headers: {
-                'Content-Type': 'application/json',
-                'apikey': CONFIG.SUPABASE_ANON_KEY,
-                'Authorization': 'Bearer ' + CONFIG.SUPABASE_ANON_KEY,
-                'Prefer': 'return=minimal'
-              },
-              body: JSON.stringify(updateData)
-            }
-          );
-          if (!res.ok) throw new Error('Update failed: ' + res.status);
-          console.log('Proposal updated successfully');
-
-          // Also notify webhook so AI re-processes
-          await fetch(CONFIG.WEBHOOK_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...formData, _action: 'edit' })
-          }).catch(e => console.log('Webhook notify failed:', e));
-        } else {
-          // CREATE MODE: Send to webhook as normal
-          const response = await fetch(CONFIG.WEBHOOK_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formData)
-          });
-          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        console.log('Form submitted successfully');
-      } catch (error) {
-        console.error('Submission error:', error);
-        showToast('Error: ' + error.message);
-      }
-
-      // Auto-close after 5 seconds (only in LINE app, not on PC browser)
-      setTimeout(() => {
-        try {
-          if (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
-            liff.closeWindow();
-          } else {
-            // On PC/external browser: show success message instead of closing
-            showToast('You can close this page now, or wait to receive the link in LINE.');
-          }
-        } catch (e) { /* ignore */ }
-      }, 5000);
-    }
-
-    // Notifications
-    function showError(message) {
-      const banner = document.getElementById('errorBanner');
-      banner.textContent = message;
-      banner.classList.add('show');
-    }
-
-    function hideError() {
-      const banner = document.getElementById('errorBanner');
-      banner.classList.remove('show');
-    }
-
-    function showToast(message) {
-      const toast = document.getElementById('toast');
-      toast.textContent = message;
-      toast.classList.add('show');
-      setTimeout(() => {
-        toast.classList.remove('show');
-      }, 3000);
-    }
-
-    // Initialize on load
-    window.addEventListener('DOMContentLoaded', () => {
-      setupEventListeners();
-      initLIFF();
+async function sendAlertAction(action, alertId) {
+  if (!CONFIG.isLive) return null;
+  try {
+    const result = await apiPost('/api/alert-action', {
+      action,
+      alert_id: alertId,
+      line_user_id: CONFIG.LINE_USER_ID,
     });
-  </script>
+    return result;
+  } catch (err) {
+    showToast(`API Error: ${err.message}`, 'error');
+    return null;
+  }
+}
+
+async function fetchDashboardData() {
+  if (!CONFIG.isLive) return;
+  try {
+    const [latestRes, alertsRes, summaryRes] = await Promise.all([
+      apiGet('/api/dashboard-data?type=latest'),
+      apiGet('/api/dashboard-data?type=alerts'),
+      apiGet('/api/dashboard-data?type=summary'),
+    ]);
+
+    // Update sensor values from API
+    if (latestRes.readings) {
+      latestRes.readings.forEach(r => {
+        const s = SENSORS.find(s => s.id === r.sensor_id);
+        if (!s) return;
+        const d = sensorData[s.id];
+        d.value = r.value;
+        if ((s.alarmHigh && r.value >= s.alarmHigh) || (s.alarmLow !== null && r.value <= s.alarmLow)) {
+          d.status = 'alarm'; d.alarm = true;
+        } else if ((s.warnHigh && r.value >= s.warnHigh) || (s.warnLow !== null && r.value <= s.warnLow)) {
+          d.status = 'warning'; d.alarm = false;
+        } else {
+          d.status = 'normal'; d.alarm = false;
+        }
+        sensorHistories[s.id].push(r.value);
+        if (sensorHistories[s.id].length > 30) sensorHistories[s.id].shift();
+      });
+    }
+
+    // Merge open/ack alerts from API
+    if (alertsRes.alerts && alertsRes.alerts.length > 0) {
+      alertsRes.alerts.forEach(apiAlert => {
+        const exists = alerts.find(a => a.apiId === apiAlert.id);
+        if (exists) {
+          // Update status if changed
+          const newStatus = apiAlert.status === 'acknowledged' ? 'acknowledged' : 'open';
+          if (exists.status !== newStatus && exists.status !== 'resolved') exists.status = newStatus;
+        } else {
+          alerts.unshift({
+            id: Date.now() + Math.random(),
+            apiId: apiAlert.id,
+            time: new Date(apiAlert.triggered_at || apiAlert.created_at),
+            sensorId: apiAlert.sensor_id,
+            sensorName: apiAlert.sensor_name || apiAlert.sensor_id,
+            value: apiAlert.trigger_value,
+            unit: SENSORS.find(s => s.id === apiAlert.sensor_id)?.unit || '',
+            threshold: apiAlert.threshold_value,
+            direction: apiAlert.direction || 'HIGH',
+            severity: apiAlert.severity?.toLowerCase() || 'warning',
+            status: apiAlert.status === 'acknowledged' ? 'acknowledged' : 'open',
+            responder: apiAlert.acknowledged_by_name || null,
+          });
+        }
+      });
+    }
+
+    // Update stats from API summary
+    if (summaryRes) {
+      document.getElementById('stat-alerts').textContent = summaryRes.open_alerts || 0;
+      document.getElementById('stat-resolved').textContent = summaryRes.resolved_today || 0;
+      document.getElementById('stat-avgtime').textContent = summaryRes.avg_response_min || '—';
+      resolvedCount = summaryRes.resolved_today || 0;
+    }
+
+    updateSensorDisplay();
+    renderAlerts();
+  } catch (err) {
+    console.error('Dashboard fetch error:', err);
+  }
+}
+
+async function fetchAlertHistory() {
+  if (!CONFIG.isLive) return;
+  try {
+    const histRes = await apiGet('/api/dashboard-data?type=alert-history');
+    if (histRes.alerts && histRes.alerts.length > 0) {
+      histRes.alerts.forEach(apiAlert => {
+        const exists = alerts.find(a => a.apiId === apiAlert.id);
+        if (exists) return;
+        alerts.push({
+          id: Date.now() + Math.random(),
+          apiId: apiAlert.id,
+          time: new Date(apiAlert.triggered_at || apiAlert.created_at),
+          sensorId: apiAlert.sensor_id,
+          sensorName: apiAlert.sensors?.name || apiAlert.sensor_id,
+          value: apiAlert.trigger_value,
+          unit: apiAlert.sensors?.unit || SENSORS.find(s => s.id === apiAlert.sensor_id)?.unit || '',
+          threshold: apiAlert.threshold_value,
+          direction: apiAlert.direction || 'HIGH',
+          severity: apiAlert.severity?.toLowerCase() || 'warning',
+          status: apiAlert.status,
+          responder: null,
+          ackTime: apiAlert.acknowledged_at ? new Date(apiAlert.acknowledged_at) : null,
+          resolveTime: apiAlert.resolved_at ? new Date(apiAlert.resolved_at) : null,
+        });
+      });
+      // Sort by time descending
+      alerts.sort((a, b) => b.time - a.time);
+      renderAlerts();
+    }
+  } catch (err) {
+    console.error('Alert history fetch error:', err);
+  }
+}
+
+// ══════════════════════════════════════════════
+//  BUILD SENSOR CARDS (ONCE)
+// ══════════════════════════════════════════════
+function buildSensorCards() {
+  const grid = document.getElementById('sensor-grid');
+  const typeIcons = { pressure: '🔵', flow: '🟢', temperature: '🔴' };
+  const barClasses = { pressure: 'bar-pressure', flow: 'bar-flow', temperature: 'bar-temperature' };
+
+  grid.innerHTML = SENSORS.map(s => {
+    const icon = typeIcons[s.type];
+    const barClass = barClasses[s.type];
+    const warnLabel = s.warnLow !== null
+      ? `W: ${s.warnLow}/${s.warnHigh}`
+      : `W: >${s.warnHigh}`;
+    const alarmLabel = s.alarmLow !== null
+      ? `A: ${s.alarmLow}/${s.alarmHigh}`
+      : `A: >${s.alarmHigh}`;
+
+    return `<div class="sensor-card" id="card-${s.id}">
+      <div class="sensor-type-bar ${barClass}"></div>
+      <div class="sensor-header">
+        <div>
+          <div class="sensor-tag">${icon} ${s.id}</div>
+        </div>
+        <span class="sensor-status status-normal" id="status-badge-${s.id}">NORMAL</span>
+      </div>
+      <div class="sensor-name">${s.name}</div>
+      <div class="sensor-name-th">${s.nameTH}</div>
+      <div class="sensor-value" id="value-${s.id}">${s.nominal.toFixed(1)}<span class="sensor-unit"> ${s.unit}</span></div>
+      <div class="sensor-range">
+        Range: <span>${s.min}–${s.max} ${s.unit}</span><br>
+        <span style="color:var(--warning)">${warnLabel}</span> &nbsp;
+        <span style="color:var(--danger)">${alarmLabel}</span>
+      </div>
+      <div class="gauge-bar-container">
+        <div class="gauge-bar-bg">
+          <div class="gauge-bar-fill" id="gauge-${s.id}" style="width:50%; background:var(--accent);"></div>
+          ${s.alarmHigh ? `<div class="threshold-line hi" style="left:${((s.alarmHigh - s.min) / (s.max - s.min)) * 100}%;"></div>` : ''}
+          ${s.alarmLow !== null ? `<div class="threshold-line lo" style="left:${((s.alarmLow - s.min) / (s.max - s.min)) * 100}%;"></div>` : ''}
+          ${s.warnHigh ? `<div class="threshold-line warn" style="left:${((s.warnHigh - s.min) / (s.max - s.min)) * 100}%;"></div>` : ''}
+          ${s.warnLow !== null ? `<div class="threshold-line warn" style="left:${((s.warnLow - s.min) / (s.max - s.min)) * 100}%;"></div>` : ''}
+        </div>
+        <div class="gauge-bar-markers"><span>${s.min}</span><span>${s.max} ${s.unit}</span></div>
+      </div>
+      <div class="mini-chart-wrap"><canvas class="mini-chart" id="chart-${s.id}"></canvas></div>
+    </div>`;
+  }).join('');
+
+  // Create Chart.js instances ONCE
+  const typeColors = { pressure: '#1565C0', flow: '#00838F', temperature: '#C62828' };
+  SENSORS.forEach(s => {
+    const ctx = document.getElementById(`chart-${s.id}`);
+    if (!ctx) return;
+    const color = typeColors[s.type];
+    charts[s.id] = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: sensorHistories[s.id].map(() => ''),
+        datasets: [{
+          data: [...sensorHistories[s.id]],
+          borderColor: color, borderWidth: 1.5,
+          fill: true, backgroundColor: color + '15',
+          pointRadius: 0, tension: 0.3,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { display: false },
+          y: { display: false, min: s.min, max: s.max }
+        },
+        animation: false,
+      }
+    });
+  });
+}
+
+// ══════════════════════════════════════════════
+//  UPDATE DISPLAY (no DOM rebuild)
+// ══════════════════════════════════════════════
+function updateSensorDisplay() {
+  SENSORS.forEach(s => {
+    const d = sensorData[s.id];
+    const card = document.getElementById(`card-${s.id}`);
+    const valEl = document.getElementById(`value-${s.id}`);
+    const badge = document.getElementById(`status-badge-${s.id}`);
+    const gauge = document.getElementById(`gauge-${s.id}`);
+    if (!card || !valEl || !badge || !gauge) return;
+
+    card.classList.remove('alarm', 'warning-state');
+    if (d.status === 'alarm') card.classList.add('alarm');
+    else if (d.status === 'warning') card.classList.add('warning-state');
+
+    const valColor = d.status === 'alarm' ? 'var(--danger)' : d.status === 'warning' ? 'var(--warning)' : 'var(--dark)';
+    valEl.style.color = valColor;
+    valEl.innerHTML = `${d.value.toFixed(1)}<span class="sensor-unit"> ${s.unit}</span>`;
+
+    if (d.status === 'alarm') {
+      badge.className = 'sensor-status status-alarm'; badge.textContent = 'ALARM';
+    } else if (d.status === 'warning') {
+      badge.className = 'sensor-status status-warning'; badge.textContent = 'WARNING';
+    } else {
+      badge.className = 'sensor-status status-normal'; badge.textContent = 'NORMAL';
+    }
+
+    const pct = ((d.value - s.min) / (s.max - s.min)) * 100;
+    const barColor = d.status === 'alarm' ? 'var(--danger)' : d.status === 'warning' ? 'var(--warning)' : 'var(--accent)';
+    gauge.style.width = Math.min(100, Math.max(0, pct)) + '%';
+    gauge.style.background = barColor;
+
+    const chart = charts[s.id];
+    if (chart) {
+      const typeColors = { pressure: '#1565C0', flow: '#00838F', temperature: '#C62828' };
+      const lineColor = d.status === 'alarm' ? '#D32F2F' : d.status === 'warning' ? '#F7941D' : typeColors[s.type];
+      chart.data.datasets[0].data = [...sensorHistories[s.id]];
+      chart.data.datasets[0].borderColor = lineColor;
+      chart.data.datasets[0].backgroundColor = lineColor + '15';
+      chart.data.labels = sensorHistories[s.id].map(() => '');
+      chart.update('none');
+    }
+  });
+}
+
+// ══════════════════════════════════════════════
+//  SIMULATE NORMAL FLUCTUATION
+// ══════════════════════════════════════════════
+function updateSensors() {
+  SENSORS.forEach(s => {
+    const d = sensorData[s.id];
+    if (!d.alarm) {
+      const drift = (s.nominal - d.value) * 0.05;
+      const range = (s.warnHigh || s.nominal * 1.2) - (s.warnLow || s.nominal * 0.8);
+      const noise = (Math.random() - 0.5) * range * 0.06;
+      d.value = Math.max(s.min, Math.min(s.max, d.value + drift + noise));
+      d.status = 'normal';
+    }
+    sensorHistories[s.id].push(d.value);
+    if (sensorHistories[s.id].length > 30) sensorHistories[s.id].shift();
+  });
+  updateSensorDisplay();
+  updateStats();
+}
+
+// ══════════════════════════════════════════════
+//  TRIGGER ALARM
+// ══════════════════════════════════════════════
+async function triggerAlarm(type) {
+  const candidates = SENSORS.filter(s => s.type === type && !sensorData[s.id].alarm);
+  if (candidates.length === 0) {
+    showToast(`ไม่มี ${type} sensor ที่พร้อม — ลอง Reset ก่อน`, 'info');
+    return;
+  }
+  const s = candidates[0];
+  const d = sensorData[s.id];
+
+  // Generate alarm value
+  const isHigh = type === 'temperature' || Math.random() > 0.3;
+  if (isHigh) {
+    d.value = s.alarmHigh + Math.random() * (s.max - s.alarmHigh) * 0.5;
+  } else if (s.alarmLow !== null) {
+    d.value = s.alarmLow - Math.random() * (s.alarmLow - s.min) * 0.4;
+  } else {
+    d.value = s.alarmHigh + Math.random() * (s.max - s.alarmHigh) * 0.5;
+  }
+  d.value = Math.max(s.min, Math.min(s.max, d.value));
+  d.status = type === 'temperature' && candidates[0] === SENSORS[4] ? 'warning' : 'alarm';
+  d.alarm = true;
+
+  // Send to API if live
+  if (CONFIG.isLive) {
+    showToast(`📡 Sending ${s.id} = ${d.value.toFixed(1)} ${s.unit} to API...`, 'info');
+    const result = await sendSensorValue(s.id, parseFloat(d.value.toFixed(1)));
+    if (result) {
+      showToast(`✅ API: ${s.id} — ${result.anomaly ? 'ALARM triggered! LINE จะแจ้งเตือน' : 'Value stored'}`, result.anomaly ? 'error' : 'success');
+      if (result.alert_id) {
+        // Store real alert_id for acknowledge/resolve
+        const alert = {
+          id: Date.now(),
+          apiId: result.alert_id,
+          time: new Date(),
+          sensorId: s.id, sensorName: s.name,
+          value: d.value, unit: s.unit,
+          threshold: isHigh ? s.alarmHigh : (s.alarmLow || s.warnHigh),
+          direction: isHigh ? 'HIGH' : 'LOW',
+          severity: d.status === 'alarm' ? 'critical' : 'warning',
+          status: 'open', responder: null,
+        };
+        alerts.unshift(alert);
+        renderAlerts();
+        renderLinePreview(alert, s);
+        addMaintLog(`🚨 ALARM: ${s.id} — ${d.value.toFixed(1)} ${s.unit} (${alert.direction}) → LINE sent`, 'var(--danger)');
+      }
+    } else {
+      // API failed, still show locally
+      addLocalAlert(s, d, isHigh);
+    }
+  } else {
+    addLocalAlert(s, d, isHigh);
+  }
+
+  updateSensorDisplay();
+  updateStats();
+}
+
+function addLocalAlert(s, d, isHigh) {
+  const alert = {
+    id: Date.now(),
+    apiId: null,
+    time: new Date(),
+    sensorId: s.id, sensorName: s.name,
+    value: d.value, unit: s.unit,
+    threshold: isHigh ? s.alarmHigh : (s.alarmLow || s.warnHigh),
+    direction: isHigh ? 'HIGH' : 'LOW',
+    severity: d.status === 'alarm' ? 'critical' : 'warning',
+    status: 'open', responder: null,
+  };
+  alerts.unshift(alert);
+  renderAlerts();
+  renderLinePreview(alert, s);
+  addMaintLog(`🚨 ${d.status.toUpperCase()}: ${s.id} — ${d.value.toFixed(1)} ${s.unit} (Demo Mode)`, 'var(--danger)');
+}
+
+// ══════════════════════════════════════════════
+//  SEND NORMAL VALUES
+// ══════════════════════════════════════════════
+async function sendNormalValues() {
+  if (!CONFIG.isLive) {
+    showToast('Demo Mode — ไม่ส่ง API (กด Connect ก่อน)', 'info');
+    return;
+  }
+  showToast('📡 Sending normal values for all 6 sensors...', 'info');
+  for (const s of SENSORS) {
+    const value = parseFloat(s.nominal.toFixed(1));
+    await sendSensorValue(s.id, value);
+  }
+  showToast('✅ Sent normal values — all 6 sensors recorded', 'success');
+  addMaintLog('📊 Sent normal values for all 6 sensors to API', 'var(--primary)');
+}
+
+// ══════════════════════════════════════════════
+//  ACKNOWLEDGE / RESOLVE
+// ══════════════════════════════════════════════
+const responders = ['Somchai K.', 'Wichai P.', 'Nattapong S.', 'Kittisak M.'];
+
+async function acknowledgeLatest() {
+  const open = alerts.find(a => a.status === 'open');
+  if (!open) { showToast('ไม่มี alert ที่ต้อง acknowledge', 'info'); return; }
+
+  if (CONFIG.isLive && open.apiId) {
+    showToast('📡 Sending acknowledge to API...', 'info');
+    const result = await sendAlertAction('acknowledge', open.apiId);
+    if (result) {
+      showToast('✅ Acknowledged — LINE จะแจ้งทีม', 'success');
+    }
+  }
+
+  open.status = 'acknowledged';
+  open.responder = responders[Math.floor(Math.random() * responders.length)];
+  open.ackTime = new Date();
+  renderAlerts();
+  renderLineAck(open);
+  addMaintLog(`👷 ${open.responder} acknowledged ${open.sensorId}`, 'var(--primary)');
+  updateStats();
+}
+
+async function resolveLatest() {
+  const ack = alerts.find(a => a.status === 'acknowledged');
+  if (!ack) { showToast('ไม่มี alert ที่ acknowledged — กด Acknowledge ก่อน', 'info'); return; }
+
+  if (CONFIG.isLive && ack.apiId) {
+    showToast('📡 Sending resolve to API...', 'info');
+    const result = await sendAlertAction('resolve', ack.apiId);
+    if (result) {
+      showToast('✅ Resolved — LINE จะแจ้งว่าแก้ไขแล้ว', 'success');
+    }
+  }
+
+  ack.status = 'resolved';
+  ack.resolveTime = new Date();
+  const sensor = SENSORS.find(s => s.id === ack.sensorId);
+  if (sensor) {
+    const d = sensorData[sensor.id];
+    d.value = sensor.nominal;
+    d.status = 'normal';
+    d.alarm = false;
+    // Send normal value back
+    if (CONFIG.isLive) sendSensorValue(sensor.id, sensor.nominal);
+  }
+  resolvedCount++;
+  renderAlerts();
+  renderLineResolved(ack);
+  const mins = ack.ackTime ? Math.round((ack.resolveTime - ack.ackTime) / 60000) || 1 : 1;
+  addMaintLog(`✅ ${ack.responder} resolved ${ack.sensorId} — ${mins} min`, 'var(--success)');
+  updateSensorDisplay();
+  updateStats();
+}
+
+// ══════════════════════════════════════════════
+//  RESET
+// ══════════════════════════════════════════════
+async function resetAll() {
+  // Resolve all open alerts in API
+  if (CONFIG.isLive) {
+    try {
+      showToast('📡 Resolving all open alerts...', 'info');
+      await apiGet('/api/dashboard-data?type=resolve-all');
+      showToast('✅ All alerts resolved in API', 'success');
+    } catch (err) {
+      console.error('Reset API error:', err);
+    }
+  }
+  SENSORS.forEach(s => { sensorData[s.id] = { value: s.nominal, status: 'normal', alarm: false }; });
+  alerts.length = 0;
+  resolvedCount = 0;
+  document.getElementById('alert-tbody').innerHTML = '';
+  document.getElementById('no-alerts').style.display = 'block';
+  document.getElementById('line-preview-area').innerHTML = '<div style="text-align:center; padding:20px; color:var(--muted); font-size:12px;">กดปุ่ม Alarm เพื่อดูตัวอย่างข้อความ LINE</div>';
+  document.getElementById('maint-log').innerHTML = '<div style="text-align:center; padding:20px; color:var(--muted); font-size:12px;">ยังไม่มีกิจกรรม</div>';
+  updateSensorDisplay();
+  updateStats();
+  addMaintLog('🔄 System reset — all alerts cleared', 'var(--muted)');
+}
+
+// ══════════════════════════════════════════════
+//  RENDER ALERTS TABLE
+// ══════════════════════════════════════════════
+function renderAlerts() {
+  const tbody = document.getElementById('alert-tbody');
+  const noAlerts = document.getElementById('no-alerts');
+  if (alerts.length === 0) { noAlerts.style.display = 'block'; tbody.innerHTML = ''; return; }
+  noAlerts.style.display = 'none';
+  tbody.innerHTML = alerts.slice(0, 10).map(a => {
+    const sevClass = a.severity === 'critical' ? 'sev-critical' : 'sev-warning';
+    const stClass = a.status === 'open' ? 'st-open' : a.status === 'acknowledged' ? 'st-ack' : 'st-resolved';
+    const stText = a.status === 'open' ? 'OPEN' : a.status === 'acknowledged' ? 'IN PROGRESS' : 'RESOLVED';
+    const actionBtn = a.status === 'open'
+      ? `<button class="btn btn-primary btn-sm" onclick="acknowledgeAlert('${a.id}')">ACK</button>`
+      : a.status === 'acknowledged'
+        ? `<button class="btn btn-success btn-sm" onclick="resolveAlert('${a.id}')">RESOLVE</button>`
+        : `<span style="color:var(--success); font-size:11px;">Done</span>`;
+    return `<tr>
+      <td>${formatTime(a.time)}</td>
+      <td><strong>${a.sensorId}</strong></td>
+      <td style="font-weight:700; color:var(--danger)">${a.value.toFixed(1)} ${a.unit}</td>
+      <td>${a.direction} ${a.threshold} ${a.unit}</td>
+      <td><span class="severity-badge ${sevClass}">${a.severity}</span></td>
+      <td><span class="status-badge ${stClass}">${stText}</span></td>
+      <td>${actionBtn}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function acknowledgeAlert(id) {
+  const alert = alerts.find(a => String(a.id) === String(id));
+  if (!alert || alert.status !== 'open') return;
+  if (CONFIG.isLive && alert.apiId) {
+    const result = await sendAlertAction('acknowledge', alert.apiId);
+    if (result) showToast('✅ Acknowledged via API', 'success');
+  }
+  alert.status = 'acknowledged';
+  alert.responder = responders[Math.floor(Math.random() * responders.length)];
+  alert.ackTime = new Date();
+  renderAlerts();
+  renderLineAck(alert);
+  addMaintLog(`👷 ${alert.responder} acknowledged ${alert.sensorId}`, 'var(--primary)');
+  updateStats();
+}
+
+async function resolveAlert(id) {
+  const alert = alerts.find(a => String(a.id) === String(id));
+  if (!alert || alert.status !== 'acknowledged') return;
+  if (CONFIG.isLive && alert.apiId) {
+    const result = await sendAlertAction('resolve', alert.apiId);
+    if (result) showToast('✅ Resolved via API', 'success');
+  }
+  alert.status = 'resolved';
+  alert.resolveTime = new Date();
+  const sensor = SENSORS.find(s => s.id === alert.sensorId);
+  if (sensor) {
+    sensorData[sensor.id] = { value: sensor.nominal, status: 'normal', alarm: false };
+    if (CONFIG.isLive) sendSensorValue(sensor.id, sensor.nominal);
+  }
+  resolvedCount++;
+  renderAlerts();
+  renderLineResolved(alert);
+  addMaintLog(`✅ ${alert.responder} resolved ${alert.sensorId}`, 'var(--success)');
+  updateSensorDisplay();
+  updateStats();
+}
+
+// ══════════════════════════════════════════════
+//  LINE PREVIEWS
+// ══════════════════════════════════════════════
+function renderLinePreview(alert, sensor) {
+  document.getElementById('line-preview-area').innerHTML = `<div class="line-preview">
+    <div style="font-size:11px; color:white; margin-bottom:8px; font-weight:600;">LINE OA — Alert Notification</div>
+    <div class="line-bubble">
+      <div class="line-bubble-header" style="background:${alert.severity === 'critical' ? '#D32F2F' : '#F7941D'}">
+        ⚠️ ${alert.severity === 'critical' ? 'ALARM' : 'WARNING'} — ${sensor.nameTH}
+      </div>
+      <div class="line-bubble-body">
+        <div class="line-bubble-row"><span class="label">Sensor</span><span class="val">${alert.sensorId}</span></div>
+        <div class="line-bubble-row"><span class="label">จุดตรวจวัด</span><span class="val">${sensor.name}</span></div>
+        <div class="line-bubble-row"><span class="label">ค่าปัจจุบัน</span><span class="val" style="color:var(--danger)">${alert.value.toFixed(1)} ${sensor.unit}</span></div>
+        <div class="line-bubble-row"><span class="label">Threshold</span><span class="val">${alert.direction} ${alert.threshold} ${sensor.unit}</span></div>
+        <div class="line-bubble-row"><span class="label">เวลา</span><span class="val">${formatTime(alert.time)}</span></div>
+      </div>
+      <div class="line-bubble-btn" style="color:var(--primary);">✅ ยืนยันเข้าหน้างาน</div>
+    </div>
+  </div>`;
+}
+
+function renderLineAck(alert) {
+  document.getElementById('line-preview-area').innerHTML = `<div class="line-preview">
+    <div style="font-size:11px; color:white; margin-bottom:8px; font-weight:600;">LINE OA — Acknowledgment</div>
+    <div class="line-bubble">
+      <div class="line-bubble-header" style="background:var(--primary)">
+        👷 กำลังเข้าตรวจสอบ — ${alert.sensorId}
+      </div>
+      <div class="line-bubble-body">
+        <div class="line-bubble-row"><span class="label">ผู้รับผิดชอบ</span><span class="val" style="color:var(--primary)">${alert.responder}</span></div>
+        <div class="line-bubble-row"><span class="label">รับทราบเมื่อ</span><span class="val">${formatTime(alert.ackTime)}</span></div>
+        <div style="margin-top:8px; padding:8px; background:#E3F2FD; border-radius:8px; font-size:11px; color:#1565C0;">
+          ${alert.responder} กำลังเดินทางไปหน้างาน
+        </div>
+      </div>
+      <div class="line-bubble-btn" style="color:var(--success);">✅ ซ่อมเสร็จแล้ว</div>
+    </div>
+  </div>`;
+}
+
+function renderLineResolved(alert) {
+  const mins = alert.ackTime ? Math.round((alert.resolveTime - alert.ackTime) / 60000) || 1 : 1;
+  document.getElementById('line-preview-area').innerHTML = `<div class="line-preview">
+    <div style="font-size:11px; color:white; margin-bottom:8px; font-weight:600;">LINE OA — Resolved</div>
+    <div class="line-bubble">
+      <div class="line-bubble-header" style="background:var(--success)">
+        ✅ แก้ไขเสร็จแล้ว — ${alert.sensorId}
+      </div>
+      <div class="line-bubble-body">
+        <div class="line-bubble-row"><span class="label">แก้ไขโดย</span><span class="val" style="color:var(--success)">${alert.responder}</span></div>
+        <div class="line-bubble-row"><span class="label">เวลาแก้ไข</span><span class="val">${mins} นาที</span></div>
+        <div class="line-bubble-row"><span class="label">สถานะ</span><span class="val" style="color:var(--success)">ปกติ</span></div>
+        <div style="margin-top:8px; padding:8px; background:#E8F5E9; border-radius:8px; font-size:11px; color:#2E7D32;">
+          เซนเซอร์กลับสู่ค่าปกติแล้ว บันทึกเข้าระบบเรียบร้อย
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════
+function addMaintLog(text, color) {
+  const log = document.getElementById('maint-log');
+  if (log.querySelector('div[style]') && !log.querySelector('.log-item')) log.innerHTML = '';
+  const item = document.createElement('div');
+  item.className = 'log-item';
+  item.innerHTML = `<div class="log-dot" style="background:${color}"></div>
+    <div><div>${text}</div><div class="log-time">${formatTime(new Date())}</div></div>`;
+  log.prepend(item);
+  while (log.children.length > 8) log.removeChild(log.lastChild);
+}
+
+function updateStats() {
+  const openCount = alerts.filter(a => a.status === 'open' || a.status === 'acknowledged').length;
+  document.getElementById('stat-alerts').textContent = openCount;
+  document.getElementById('stat-resolved').textContent = resolvedCount;
+  const resolved = alerts.filter(a => a.status === 'resolved' && a.ackTime && a.resolveTime);
+  if (resolved.length > 0) {
+    const avg = resolved.reduce((sum, a) => sum + (a.resolveTime - a.ackTime), 0) / resolved.length / 60000;
+    document.getElementById('stat-avgtime').textContent = Math.round(avg) || 1;
+  }
+}
+
+function formatTime(d) {
+  return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function updateClock() {
+  document.getElementById('clock').textContent = new Date().toLocaleString('th-TH', {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+}
+
+function showToast(msg, type = 'info') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = msg;
+  container.appendChild(toast);
+  setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 4000);
+}
+
+// ══════════════════════════════════════════════
+//  START
+// ══════════════════════════════════════════════
+const hasKey = loadSettings();
+buildSensorCards();
+setInterval(updateSensors, CONFIG.POLL_INTERVAL);
+setInterval(updateClock, 1000);
+updateClock();
+
+// Auto-connect if API key was saved
+if (hasKey) {
+  CONFIG.isLive = true;
+  updateConnectionUI();
+  updateAutoStatus();
+  addMaintLog('🔗 Auto-connected from saved settings', 'var(--success)');
+  // Fetch data immediately
+  setTimeout(() => {
+    fetchDashboardData();
+    fetchAlertHistory();
+  }, 500);
+}
+
+// Poll API data when in live mode
+setInterval(() => { if (CONFIG.isLive) fetchDashboardData(); }, 5000);
+</script>
 </body>
 </html>
