@@ -8,7 +8,7 @@ const { createClient } = require("@supabase/supabase-js");
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY
 );
 
 const N8N_NOTIFY_WEBHOOK = process.env.N8N_NOTIFY_WEBHOOK_URL;

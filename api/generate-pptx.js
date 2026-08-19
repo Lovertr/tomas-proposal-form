@@ -317,7 +317,7 @@ function addFooter(pptx, s, n) {
     x: 0, y: 7.25, w: 13.3, h: 0.25,
     fill: { color: C.navy }, line: { color: C.navy },
   });
-  s.addText("Copyright\u00A9 TOMAS TECH CORPORATION. All rights reserved.", {
+  s.addText("Copyright© TOMAS TECH CORPORATION. All rights reserved.", {
     x: 0, y: 7.25, w: 13.3, h: 0.25,
     fontSize: 7, color: C.white, align: "center", valign: "middle",
   });
@@ -330,7 +330,7 @@ function addPegasusLogo(pptx, s) {
     x: 0.18, y: 0.1, w: 1.5, h: 0.38,
     fill: { color: C.headerBlue }, line: { color: C.headerBlue }, rectRadius: 0.04,
   });
-  s.addText("\u2708 PEGASUS", {
+  s.addText("✈ PEGASUS", {
     x: 0.18, y: 0.1, w: 1.5, h: 0.38,
     fontSize: 10, bold: true, color: C.white, align: "center", valign: "middle",
   });
@@ -391,7 +391,7 @@ function buildCoverSlide(pptx, data) {
   addImageZone(pptx, s, 9.8, 4.3, 3.2, 2.7, "ILLUSTRATION");
 
   s.addShape(pptx.shapes.RECTANGLE, { x: 0, y: 7.25, w: 13.3, h: 0.25, fill: { color: C.navy }, line: { color: C.navy } });
-  s.addText("Copyright\u00A9 TOMAS TECH CORPORATION. All rights reserved.", { x: 0, y: 7.25, w: 13.3, h: 0.25, fontSize: 7, color: C.white, align: "center", valign: "middle" });
+  s.addText("Copyright© TOMAS TECH CORPORATION. All rights reserved.", { x: 0, y: 7.25, w: 13.3, h: 0.25, fontSize: 7, color: C.white, align: "center", valign: "middle" });
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -544,7 +544,7 @@ function buildBenefitsOverview(pptx, data, section) {
   // === Col 1: Problem (gray) ===
   s.addShape(pptx.shapes.RECTANGLE, { x: 0.18, y: colY, w: colW, h: colH, fill: { color: "F2F2F2" }, line: { color: C.ltgray, pt: 1 } });
   s.addShape(pptx.shapes.RECTANGLE, { x: 0.18, y: colY, w: colW, h: headerH, fill: { color: "888888" } });
-  s.addText("\u26A0  Problem of Normal process", { x: 0.18, y: colY, w: colW, h: headerH, fontSize: 10, bold: true, color: C.white, align: "center", valign: "middle" });
+  s.addText("⚠  Problem of Normal process", { x: 0.18, y: colY, w: colW, h: headerH, fontSize: 10, bold: true, color: C.white, align: "center", valign: "middle" });
 
   // Dynamic: limit items so they fit in available space
   const pItemH = 0.42;
@@ -552,7 +552,7 @@ function buildBenefitsOverview(pptx, data, section) {
   const pSpacing = maxProblems > 0 ? Math.min(contentAreaH / maxProblems, 0.55) : 0.5;
 
   problems.slice(0, maxProblems).forEach((p, pi) => {
-    s.addText("\u2717  " + toStr(p), { x: 0.28, y: contentStartY + pi * pSpacing, w: colW - 0.2, h: pItemH, fontSize: 9.5, color: "444444", valign: "middle" });
+    s.addText("✗  " + toStr(p), { x: 0.28, y: contentStartY + pi * pSpacing, w: colW - 0.2, h: pItemH, fontSize: 9.5, color: "444444", valign: "middle" });
   });
 
   // Arrow 1
@@ -561,14 +561,14 @@ function buildBenefitsOverview(pptx, data, section) {
   // === Col 2: Benefits (orange) ===
   s.addShape(pptx.shapes.RECTANGLE, { x: 4.78, y: colY, w: colW, h: colH, fill: { color: "FFF8F0" }, line: { color: "FFCCAA", pt: 1 } });
   s.addShape(pptx.shapes.RECTANGLE, { x: 4.78, y: colY, w: colW, h: headerH, fill: { color: C.orange } });
-  s.addText("\u2714  Benefits", { x: 4.78, y: colY, w: colW, h: headerH, fontSize: 10, bold: true, color: C.white, align: "center", valign: "middle" });
+  s.addText("✔  Benefits", { x: 4.78, y: colY, w: colW, h: headerH, fontSize: 10, bold: true, color: C.white, align: "center", valign: "middle" });
 
   const bItemH = 0.42;
   const maxBenefits = Math.min(benefits.length, 6, Math.floor(contentAreaH / bItemH));
   const bSpacing = maxBenefits > 0 ? Math.min(contentAreaH / maxBenefits, 0.55) : 0.5;
 
   benefits.slice(0, maxBenefits).forEach((b, bi) => {
-    s.addText("\u2714  " + toStr(b), { x: 4.9, y: contentStartY + bi * bSpacing, w: colW - 0.2, h: bItemH, fontSize: 9.5, color: "444444", valign: "middle" });
+    s.addText("✔  " + toStr(b), { x: 4.9, y: contentStartY + bi * bSpacing, w: colW - 0.2, h: bItemH, fontSize: 9.5, color: "444444", valign: "middle" });
   });
 
   // Arrow 2
@@ -612,7 +612,7 @@ function buildSystemOutline(pptx, data, section) {
   s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 0.5, y: 1.78, w: 2.9, h: 0.72, fill: { color: C.teal }, line: { color: C.teal }, rectRadius: 0.07 });
   s.addText(content.erp_name || "ERP Client Site", { x: 0.5, y: 1.78, w: 2.9, h: 0.72, fontSize: 11, bold: true, color: C.white, align: "center", valign: "middle" });
 
-  s.addText("\u2195", { x: 1.65, y: 2.56, w: 0.6, h: 0.38, fontSize: 18, color: C.gray, align: "center" });
+  s.addText("↕", { x: 1.65, y: 2.56, w: 0.6, h: 0.38, fontSize: 18, color: C.gray, align: "center" });
 
   // WMS Server block
   s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 0.5, y: 2.98, w: 2.9, h: 0.88, fill: { color: C.headerBlue }, line: { color: C.headerBlue }, rectRadius: 0.07 });
@@ -641,17 +641,17 @@ function buildSystemOutline(pptx, data, section) {
     s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: dx, y: 1.78, w: 1.28, h: 0.9, fill: { color: "E8EEF8" }, line: { color: "C0CADD", pt: 1 }, rectRadius: 0.06 });
     s.addText("\u{1F5A5}", { x: dx, y: 1.82, w: 1.28, h: 0.45, fontSize: 18, align: "center" });
     s.addText(name, { x: dx, y: 2.25, w: 1.28, h: 0.38, fontSize: 8, color: C.black, align: "center" });
-    s.addText("\u2191", { x: dx + 0.44, y: 2.72, w: 0.4, h: 0.35, fontSize: 14, color: deptColors[i] || C.gray, align: "center" });
+    s.addText("↑", { x: dx + 0.44, y: 2.72, w: 0.4, h: 0.35, fontSize: 14, color: deptColors[i] || C.gray, align: "center" });
   });
 
   // Connection bar
   s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 4.25, y: 3.18, w: 5.5, h: 0.6, fill: { color: "EEF4FF" }, line: { color: C.headerBlue, pt: 1 }, rectRadius: 0.06 });
-  s.addText(content.connection_text || "PEGASUS \u2014 Real-time Inventory | ERP Integration", {
+  s.addText(content.connection_text || "PEGASUS — Real-time Inventory | ERP Integration", {
     x: 4.25, y: 3.18, w: 5.5, h: 0.6, fontSize: 10, bold: true, color: C.headerBlue, align: "center", valign: "middle",
   });
 
   // Hardware requirements box
-  const hwReqs = toArray(content.hardware_requirements || ["Handy Terminal (Android)", "Client PC \u2014 Web browser", "Label Printer", "WiFi Access Point", "Cloud or On-premise Server"]);
+  const hwReqs = toArray(content.hardware_requirements || ["Handy Terminal (Android)", "Client PC — Web browser", "Label Printer", "WiFi Access Point", "Cloud or On-premise Server"]);
   s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 4.25, y: 3.9, w: 5.5, h: 3.0, fill: { color: C.white }, line: { color: C.ltgray, pt: 1 }, rectRadius: 0.07 });
   hwReqs.slice(0, 5).forEach((h, i) => {
     s.addText("\u{1F4F1}  " + toStr(h), { x: 4.45, y: 4.05 + i * 0.55, w: 5.1, h: 0.48, fontSize: 10.5, color: C.black, valign: "middle" });
@@ -936,13 +936,13 @@ function buildTimeline(pptx, data, section) {
 
     // Arrow between columns (not after last column in row)
     if (col < cols - 1 && i < maxPhases - 1) {
-      s.addText("\u25B6", { x: x + colW, y: y + 0.05, w: arrowW, h: boxH - 0.1, fontSize: 14, color, align: "center", valign: "middle" });
+      s.addText("▶", { x: x + colW, y: y + 0.05, w: arrowW, h: boxH - 0.1, fontSize: 14, color, align: "center", valign: "middle" });
     }
 
     // Row connector arrow (last item of row 1 → first item of row 2)
     if (rows > 1 && i === cols - 1 && maxPhases > cols) {
       const arrowY = y + boxH + 0.08;
-      s.addText("\u25BC", { x: totalW / 2 - 0.1, y: arrowY, w: 0.5, h: rowGap - boxH - 0.2, fontSize: 16, color: C.headerBlue, align: "center", valign: "middle" });
+      s.addText("▼", { x: totalW / 2 - 0.1, y: arrowY, w: 0.5, h: rowGap - boxH - 0.2, fontSize: 16, color: C.headerBlue, align: "center", valign: "middle" });
     }
   });
 }
@@ -969,7 +969,7 @@ function buildTechStack(pptx, data, section) {
     const desc = typeof item === "object" ? toStr(item.description || item.purpose || "") : "";
 
     s.addShape(pptx.shapes.OVAL, { x, y: y + 0.05, w: 0.4, h: 0.4, fill: { color: C.teal } });
-    s.addText("\u2699", { x, y: y + 0.05, w: 0.4, h: 0.4, fontSize: 14, color: C.white, align: "center", valign: "middle" });
+    s.addText("⚙", { x, y: y + 0.05, w: 0.4, h: 0.4, fontSize: 14, color: C.white, align: "center", valign: "middle" });
     s.addText(text, { x: x + 0.5, y, w: 5.5, h: 0.35, fontSize: 12, bold: true, color: C.black, valign: "middle" });
     if (desc) s.addText(desc, { x: x + 0.5, y: y + 0.35, w: 5.5, h: 0.3, fontSize: 10, color: C.gray });
   });
@@ -1626,7 +1626,7 @@ module.exports = async function handler(req, res) {
 
     const buffer = await generatePPTX(proposalData);
 
-    const safeName = (clientName || "proposal").replace(/[^a-zA-Z0-9\u0E00-\u0E7F]/g, "_").substring(0, 30);
+    const safeName = (clientName || "proposal").replace(/[^a-zA-Z0-9฀-๿]/g, "_").substring(0, 30);
     const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
     const uniqueId = Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
     const filename = `TOMAS_TECH_Proposal_${safeName}_${timestamp}_${uniqueId}.pptx`;

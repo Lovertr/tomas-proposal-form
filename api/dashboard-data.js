@@ -13,7 +13,7 @@ const { createClient } = require("@supabase/supabase-js");
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY
 );
 
 module.exports = async function handler(req, res) {
@@ -103,6 +103,27 @@ module.exports = async function handler(req, res) {
           avg_response_min: avgResponse,
           active_sensors: 6,
         });
+      }
+
+      case "alert-history": {
+        const { data, error } = await supabase
+          .from("alerts")
+          .select("*, sensors(name, type, unit)")
+          .order("created_at", { ascending: false })
+          .limit(100);
+        if (error) throw error;
+        return res.status(200).json({ alerts: data });
+      }
+
+      case "resolve-all": {
+        // Resolve all open/acknowledged alerts (used by dashboard reset)
+        const { data, error } = await supabase
+          .from("alerts")
+          .update({ status: "resolved", resolved_at: new Date().toISOString() })
+          .in("status", ["open", "acknowledged"])
+          .select("id");
+        if (error) throw error;
+        return res.status(200).json({ resolved: data?.length || 0 });
       }
 
       default:
