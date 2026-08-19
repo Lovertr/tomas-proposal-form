@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sensor Monitoring Dashboard — CONSERTECH</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --primary: #1B6B93;
+    --dark: #14405C;
+    --accent: #2AABB8;
+    --danger: #E53935;
+    --warning: #F7941D;
+    --success: #43A047;
+    --bg: #F0F4F8;
+    --card: #FFFFFF;
+    --text: #333333;
+    --muted: #7B8D9E;
+    --border: #E2E8F0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(135deg, var(--dark) 0%, var(--primary) 100%);
+    color: white; padding: 16px 32px; display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .logo-circle {
+    width: 42px; height: 42px; border-radius: 10px; background: white;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 14px; color: var(--primary);
+  }
+  .header h1 { font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
+  .header-sub { font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 2px; }
+  .header-right { display: flex; align-items: center; gap: 20px; }
+  .status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--success); display: inline-block; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .clock { font-size: 14px; font-family: 'Consolas', monospace; color: rgba(255,255,255,0.9); }
+
+  /* ── LAYOUT ── */
+  .container { max-width: 1440px; margin: 0 auto; padding: 20px 24px; }
+  .grid-sensors { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+  .grid-bottom { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+
+  /* ── SENSOR CARD ── */
+  .sensor-card {
+    background: var(--card); border-radius: 12px; padding: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid var(--border);
+    position: relative; overflow: hidden; transition: box-shadow 0.3s;
+  }
+  .sensor-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+  .sensor-card.alarm {
+    border-color: var(--danger); animation: alarm-flash 1s infinite;
+    box-shadow: 0 0 16px rgba(229,57,53,0.3);
+  }
+  @keyframes alarm-flash { 0%,100% { background: #FFF5F5; } 50% { background: #FFEBEE; } }
+  .sensor-type-bar { position: absolute; top: 0; left: 0; right: 0; height: 4px; }
+  .bar-pressure { background: var(--primary); }
+  .bar-temperature { background: var(--danger); }
+  .bar-flow { background: var(--accent); }
+  .sensor-header { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 4px; }
+  .sensor-icon { font-size: 28px; }
+  .sensor-status {
+    font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .status-normal { background: #E8F5E9; color: var(--success); }
+  .status-alarm { background: #FFEBEE; color: var(--danger); }
+  .status-warning { background: #FFF3E0; color: var(--warning); }
+  .sensor-name { font-size: 13px; color: var(--muted); margin-top: 8px; font-weight: 500; }
+  .sensor-value { font-size: 42px; font-weight: 800; margin: 4px 0; font-family: 'Consolas', monospace; }
+  .sensor-unit { font-size: 16px; font-weight: 400; color: var(--muted); }
+  .sensor-range { font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .sensor-range span { font-weight: 600; }
+  .mini-chart { height: 50px; margin-top: 10px; }
+
+  /* ── GAUGE BAR ── */
+  .gauge-bar-container { margin-top: 10px; }
+  .gauge-bar-bg {
+    height: 8px; background: #E8ECF0; border-radius: 4px; position: relative; overflow: visible;
+  }
+  .gauge-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; position: relative; }
+  .gauge-bar-markers { display: flex; justify-content: space-between; margin-top: 3px; }
+  .gauge-bar-markers span { font-size: 9px; color: var(--muted); }
+  .threshold-line {
+    position: absolute; top: -3px; width: 2px; height: 14px; background: var(--danger);
+    border-radius: 1px;
+  }
+  .threshold-line.low { background: #1976D2; }
+
+  /* ── ALERT TABLE ── */
+  .panel {
+    background: var(--card); border-radius: 12px; padding: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid var(--border);
+  }
+  .panel-title {
+    font-size: 15px; font-weight: 700; color: var(--dark); margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .panel-title .icon { font-size: 18px; }
+  .alert-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .alert-table th {
+    text-align: left; padding: 8px 10px; background: var(--bg); color: var(--muted);
+    font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--border);
+  }
+  .alert-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .alert-table tr:hover { background: #F8FAFB; }
+  .severity-badge {
+    font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+    display: inline-block; text-transform: uppercase;
+  }
+  .sev-critical { background: #FFEBEE; color: var(--danger); }
+  .sev-warning { background: #FFF3E0; color: var(--warning); }
+  .status-badge {
+    font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px;
+    display: inline-block;
+  }
+  .st-open { background: #FFEBEE; color: var(--danger); }
+  .st-ack { background: #E3F2FD; color: #1565C0; }
+  .st-resolved { background: #E8F5E9; color: var(--success); }
+
+  /* ── MAINTENANCE LOG ── */
+  .log-item {
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-start; gap: 10px; font-size: 12px;
+  }
+  .log-item:last-child { border-bottom: none; }
+  .log-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+  .log-time { color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+  /* ── DEMO CONTROLS ── */
+  .demo-bar {
+    background: linear-gradient(135deg, #FFF3E0, #FFE0B2); border: 1px solid #FFB74D;
+    border-radius: 10px; padding: 14px 20px; margin-bottom: 20px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  }
+  .demo-bar-label { font-size: 13px; font-weight: 600; color: #E65100; }
+  .demo-bar-label small { font-weight: 400; color: #BF360C; display: block; font-size: 11px; }
+  .demo-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn {
+    padding: 8px 16px; border: none; border-radius: 8px; font-size: 12px;
+    font-weight: 600; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-danger:hover { background: #C62828; }
+  .btn-warning { background: var(--warning); color: white; }
+  .btn-warning:hover { background: #E68A00; }
+  .btn-success { background: var(--success); color: white; }
+  .btn-success:hover { background: #2E7D32; }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--dark); }
+  .btn-outline { background: white; color: var(--primary); border: 1px solid var(--primary); }
+  .btn-outline:hover { background: var(--primary); color: white; }
+
+  /* ── STATS ROW ── */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .stat-card {
+    background: var(--card); border-radius: 10px; padding: 14px 18px;
+    border: 1px solid var(--border); display: flex; align-items: center; gap: 14px;
+  }
+  .stat-icon {
+    width: 44px; height: 44px; border-radius: 10px; display: flex;
+    align-items: center; justify-content: center; font-size: 22px;
+  }
+  .stat-value { font-size: 24px; font-weight: 800; font-family: 'Consolas', monospace; }
+  .stat-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* ── FOOTER ── */
+  .footer {
+    text-align: center; padding: 20px; color: var(--muted); font-size: 11px;
+    border-top: 1px solid var(--border); margin-top: 24px;
+  }
+  .footer a { color: var(--primary); text-decoration: none; }
+
+  /* ── LINE PREVIEW ── */
+  .line-preview {
+    background: #7BC67E; border-radius: 12px; padding: 16px; margin-top: 16px;
+  }
+  .line-bubble {
+    background: white; border-radius: 16px; padding: 0; overflow: hidden;
+    max-width: 300px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    font-size: 12px;
+  }
+  .line-bubble-header {
+    padding: 12px 14px; color: white; font-weight: 700; font-size: 13px;
+  }
+  .line-bubble-body { padding: 12px 14px; }
+  .line-bubble-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 11px; }
+  .line-bubble-row .label { color: #999; }
+  .line-bubble-row .val { font-weight: 600; }
+  .line-bubble-btn {
+    display: block; text-align: center; padding: 10px; font-weight: 700;
+    font-size: 13px; border-top: 1px solid #EEE; color: var(--primary);
+    text-decoration: none; cursor: pointer;
+  }
+  .line-bubble-btn:hover { background: #F5F5F5; }
+
+  @media (max-width: 1024px) {
+    .grid-sensors { grid-template-columns: repeat(2, 1fr); }
+    .grid-bottom { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 640px) {
+    .grid-sensors { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo-circle">CS</div>
+    <div>
+      <h1>Condition Monitoring System</h1>
+      <div class="header-sub">CONSERTECH CO., LTD. — Facility Monitoring Dashboard</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div><span class="status-dot"></span> <span style="font-size:12px; margin-left:4px;">LIVE</span></div>
+    <div class="clock" id="clock">--:--:--</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- DEMO CONTROLS -->
+  <div class="demo-bar">
+    <div class="demo-bar-label">
+      Demo Mode — Sensor Simulator
+      <small>กดปุ่มด้านขวาเพื่อจำลองสถานการณ์ต่างๆ</small>
+    </div>
+    <div class="demo-buttons">
+      <button class="btn btn-danger" onclick="triggerAlarm('pressure')">Pressure Alarm</button>
+      <button class="btn btn-warning" onclick="triggerAlarm('temperature')">Temp Warning</button>
+      <button class="btn btn-danger" onclick="triggerAlarm('flow')">Flow Alarm</button>
+      <button class="btn btn-success" onclick="acknowledgeLatest()">Acknowledge</button>
+      <button class="btn btn-primary" onclick="resolveLatest()">Resolve</button>
+      <button class="btn btn-outline" onclick="resetAll()">Reset All</button>
+    </div>
+  </div>
+
+  <!-- STATS ROW -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#E3F2FD; color:var(--primary);">📡</div>
+      <div><div class="stat-value" id="stat-sensors">6</div><div class="stat-label">Active Sensors</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#FFEBEE; color:var(--danger);">🔔</div>
+      <div><div class="stat-value" id="stat-alerts">0</div><div class="stat-label">Open Alerts</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#E8F5E9; color:var(--success);">✅</div>
+      <div><div class="stat-value" id="stat-resolved">0</div><div class="stat-label">Resolved Today</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#FFF3E0; color:var(--warning);">⏱️</div>
+      <div><div class="stat-value" id="stat-avgtime">—</div><div class="stat-label">Avg Response (min)</div></div>
+    </div>
+  </div>
+
+  <!-- SENSOR CARDS -->
+  <div class="grid-sensors" id="sensor-grid"></div>
+
+  <!-- BOTTOM GRID -->
+  <div class="grid-bottom">
+    <!-- Alert History -->
+    <div class="panel">
+      <div class="panel-title"><span class="icon">🚨</span> Alert History</div>
+      <table class="alert-table">
+        <thead>
+          <tr><th>Time</th><th>Sensor</th><th>Value</th><th>Threshold</th><th>Severity</th><th>Status</th><th>Responder</th></tr>
+        </thead>
+        <tbody id="alert-tbody"></tbody>
+      </table>
+      <div id="no-alerts" style="text-align:center; padding:30px; color:var(--muted); font-size:13px;">
+        No alerts — All sensors operating normally
+      </div>
+    </div>
+
+    <!-- Right Panel: LINE Preview + Maintenance Log -->
+    <div>
+      <!-- LINE Message Preview -->
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-title"><span class="icon">💬</span> LINE Alert Preview</div>
+        <div id="line-preview-area">
+          <div style="text-align:center; padding:20px; color:var(--muted); font-size:12px;">
+            Trigger an alarm to see LINE message preview
+          </div>
+        </div>
+      </div>
+
+      <!-- Maintenance Log -->
+      <div class="panel">
+        <div class="panel-title"><span class="icon">🔧</span> Maintenance Log</div>
+        <div id="maint-log">
+          <div style="text-align:center; padding:20px; color:var(--muted); font-size:12px;">
+            No maintenance activities yet
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  CONSERTECH CO., LTD. — Condition Monitoring System Prototype<br>
+  CONSULT • SERVICE • TECHNOLOGY | <a href="https://www.cs-th.com" target="_blank">www.cs-th.com</a> | info@cs-th.com
+</div>
+
+<script>
+// ── SENSOR DEFINITIONS ──
+const SENSORS = [
+  { id: 'PS-01', name: 'Pressure Sensor #1', type: 'pressure', unit: 'bar', icon: '🔵', min: 0, max: 10, normalMin: 2.5, normalMax: 7.5, thresholdLow: 1.5, thresholdHigh: 8.5, nominal: 5.0 },
+  { id: 'PS-02', name: 'Pressure Sensor #2', type: 'pressure', unit: 'bar', icon: '🔵', min: 0, max: 10, normalMin: 2.0, normalMax: 7.0, thresholdLow: 1.0, thresholdHigh: 8.0, nominal: 4.5 },
+  { id: 'TS-01', name: 'Temperature Sensor #1', type: 'temperature', unit: '°C', icon: '🔴', min: 0, max: 120, normalMin: 30, normalMax: 75, thresholdLow: 15, thresholdHigh: 85, nominal: 55 },
+  { id: 'TS-02', name: 'Temperature Sensor #2', type: 'temperature', unit: '°C', icon: '🔴', min: 0, max: 120, normalMin: 25, normalMax: 70, thresholdLow: 10, thresholdHigh: 80, nominal: 50 },
+  { id: 'FS-01', name: 'Flow Rate Sensor #1', type: 'flow', unit: 'L/min', icon: '🟢', min: 0, max: 50, normalMin: 10, normalMax: 35, thresholdLow: 5, thresholdHigh: 40, nominal: 22 },
+  { id: 'FS-02', name: 'Flow Rate Sensor #2', type: 'flow', unit: 'L/min', icon: '🟢', min: 0, max: 50, normalMin: 8, normalMax: 30, thresholdLow: 3, thresholdHigh: 38, nominal: 18 },
+];
+
+const sensorData = {};
+const sensorHistories = {};
+const alerts = [];
+let resolvedCount = 0;
+const responders = ['Somchai K.', 'Wichai P.', 'Nattapong S.', 'Kittisak M.'];
+
+// ── INIT ──
+SENSORS.forEach(s => {
+  sensorData[s.id] = { value: s.nominal, status: 'normal', alarm: false };
+  sensorHistories[s.id] = Array(30).fill(null).map(() => s.nominal + (Math.random() - 0.5) * (s.normalMax - s.normalMin) * 0.3);
+});
+
+// ── RENDER SENSOR CARDS ──
+function renderSensorCards() {
+  const grid = document.getElementById('sensor-grid');
+  grid.innerHTML = SENSORS.map(s => {
+    const d = sensorData[s.id];
+    const barClass = s.type === 'pressure' ? 'bar-pressure' : s.type === 'temperature' ? 'bar-temperature' : 'bar-flow';
+    const statusClass = d.status === 'alarm' ? 'status-alarm' : d.status === 'warning' ? 'status-warning' : 'status-normal';
+    const statusText = d.status === 'alarm' ? 'ALARM' : d.status === 'warning' ? 'WARNING' : 'NORMAL';
+    const cardClass = d.alarm ? 'sensor-card alarm' : 'sensor-card';
+    const pct = ((d.value - s.min) / (s.max - s.min)) * 100;
+    const thHighPct = ((s.thresholdHigh - s.min) / (s.max - s.min)) * 100;
+    const thLowPct = ((s.thresholdLow - s.min) / (s.max - s.min)) * 100;
+    const barColor = d.status === 'alarm' ? 'var(--danger)' : d.status === 'warning' ? 'var(--warning)' : 'var(--accent)';
+    const valColor = d.status === 'alarm' ? 'var(--danger)' : d.status === 'warning' ? 'var(--warning)' : 'var(--dark)';
+
+    return `<div class="${cardClass}" id="card-${s.id}">
+      <div class="sensor-type-bar ${barClass}"></div>
+      <div class="sensor-header">
+        <span class="sensor-icon">${s.icon}</span>
+        <span class="sensor-status ${statusClass}">${statusText}</span>
+      </div>
+      <div class="sensor-name">${s.id} — ${s.name}</div>
+      <div class="sensor-value" style="color:${valColor}">${d.value.toFixed(1)}<span class="sensor-unit"> ${s.unit}</span></div>
+      <div class="sensor-range">Normal: <span>${s.normalMin}–${s.normalMax} ${s.unit}</span> | Alarm: <span style="color:var(--danger)">&lt;${s.thresholdLow} / &gt;${s.thresholdHigh}</span></div>
+      <div class="gauge-bar-container">
+        <div class="gauge-bar-bg">
+          <div class="gauge-bar-fill" style="width:${Math.min(100, Math.max(0, pct))}%; background:${barColor};"></div>
+          <div class="threshold-line" style="left:${thHighPct}%;"></div>
+          <div class="threshold-line low" style="left:${thLowPct}%;"></div>
+        </div>
+        <div class="gauge-bar-markers"><span>${s.min}</span><span>${s.max} ${s.unit}</span></div>
+      </div>
+      <canvas class="mini-chart" id="chart-${s.id}" height="50"></canvas>
+    </div>`;
+  }).join('');
+
+  // Draw mini charts
+  SENSORS.forEach(s => {
+    const ctx = document.getElementById(`chart-${s.id}`);
+    if (!ctx) return;
+    const hist = sensorHistories[s.id];
+    const d = sensorData[s.id];
+    const lineColor = d.status === 'alarm' ? '#E53935' : d.status === 'warning' ? '#F7941D' : '#2AABB8';
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: hist.map((_, i) => ''),
+        datasets: [{
+          data: hist,
+          borderColor: lineColor, borderWidth: 1.5,
+          fill: true, backgroundColor: lineColor + '15',
+          pointRadius: 0, tension: 0.3,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { display: false },
+          y: { display: false, min: s.min, max: s.max }
+        },
+        animation: false,
+      }
+    });
+  });
+}
+
+// ── SIMULATE NORMAL FLUCTUATION ──
+function updateSensors() {
+  SENSORS.forEach(s => {
+    const d = sensorData[s.id];
+    if (!d.alarm) {
+      // Random walk toward nominal
+      const drift = (s.nominal - d.value) * 0.05;
+      const noise = (Math.random() - 0.5) * (s.normalMax - s.normalMin) * 0.08;
+      d.value = Math.max(s.min, Math.min(s.max, d.value + drift + noise));
+      d.status = 'normal';
+    }
+    sensorHistories[s.id].push(d.value);
+    if (sensorHistories[s.id].length > 30) sensorHistories[s.id].shift();
+  });
+  renderSensorCards();
+  updateStats();
+}
+
+// ── TRIGGER ALARM ──
+function triggerAlarm(type) {
+  const candidates = SENSORS.filter(s => s.type === type && !sensorData[s.id].alarm);
+  if (candidates.length === 0) return;
+  const s = candidates[0];
+  const d = sensorData[s.id];
+  const isHigh = Math.random() > 0.3;
+  d.value = isHigh ? s.thresholdHigh + Math.random() * (s.max - s.thresholdHigh) * 0.6
+                    : s.thresholdLow - Math.random() * s.thresholdLow * 0.5;
+  d.value = Math.max(s.min, Math.min(s.max, d.value));
+  d.status = 'alarm';
+  d.alarm = true;
+
+  const severity = Math.abs(d.value - s.nominal) > (s.max - s.min) * 0.4 ? 'critical' : 'warning';
+  const alert = {
+    id: Date.now(),
+    time: new Date(),
+    sensorId: s.id,
+    sensorName: s.name,
+    value: d.value,
+    unit: s.unit,
+    threshold: isHigh ? s.thresholdHigh : s.thresholdLow,
+    direction: isHigh ? 'HIGH' : 'LOW',
+    severity,
+    status: 'open',
+    responder: null,
+    ackTime: null,
+    resolveTime: null,
+  };
+  alerts.unshift(alert);
+  renderAlerts();
+  renderLinePreview(alert, s);
+  addMaintLog(`🚨 ALARM: ${s.id} — ${d.value.toFixed(1)} ${s.unit} (${alert.direction} threshold: ${alert.threshold} ${s.unit})`, 'var(--danger)');
+  renderSensorCards();
+  updateStats();
+}
+
+// ── ACKNOWLEDGE ──
+function acknowledgeLatest() {
+  const open = alerts.find(a => a.status === 'open');
+  if (!open) return;
+  open.status = 'acknowledged';
+  open.responder = responders[Math.floor(Math.random() * responders.length)];
+  open.ackTime = new Date();
+  renderAlerts();
+  renderLineAck(open);
+  addMaintLog(`👷 ${open.responder} acknowledged ${open.sensorId} — heading to site`, 'var(--primary)');
+  updateStats();
+}
+
+// ── RESOLVE ──
+function resolveLatest() {
+  const ack = alerts.find(a => a.status === 'acknowledged');
+  if (!ack) return;
+  ack.status = 'resolved';
+  ack.resolveTime = new Date();
+  const sensor = SENSORS.find(s => s.id === ack.sensorId);
+  if (sensor) {
+    const d = sensorData[sensor.id];
+    d.value = sensor.nominal;
+    d.status = 'normal';
+    d.alarm = false;
+  }
+  resolvedCount++;
+  renderAlerts();
+  renderLineResolved(ack);
+  const mins = Math.round((ack.resolveTime - ack.ackTime) / 60000) || 1;
+  addMaintLog(`✅ ${ack.responder} resolved ${ack.sensorId} — repair time: ${mins} min`, 'var(--success)');
+  renderSensorCards();
+  updateStats();
+}
+
+// ── RESET ──
+function resetAll() {
+  SENSORS.forEach(s => {
+    sensorData[s.id] = { value: s.nominal, status: 'normal', alarm: false };
+  });
+  alerts.length = 0;
+  resolvedCount = 0;
+  document.getElementById('alert-tbody').innerHTML = '';
+  document.getElementById('no-alerts').style.display = 'block';
+  document.getElementById('line-preview-area').innerHTML = '<div style="text-align:center; padding:20px; color:var(--muted); font-size:12px;">Trigger an alarm to see LINE message preview</div>';
+  document.getElementById('maint-log').innerHTML = '<div style="text-align:center; padding:20px; color:var(--muted); font-size:12px;">No maintenance activities yet</div>';
+  renderSensorCards();
+  updateStats();
+}
+
+// ── RENDER ALERTS TABLE ──
+function renderAlerts() {
+  const tbody = document.getElementById('alert-tbody');
+  const noAlerts = document.getElementById('no-alerts');
+  if (alerts.length === 0) { noAlerts.style.display = 'block'; tbody.innerHTML = ''; return; }
+  noAlerts.style.display = 'none';
+  tbody.innerHTML = alerts.slice(0, 10).map(a => {
+    const sevClass = a.severity === 'critical' ? 'sev-critical' : 'sev-warning';
+    const stClass = a.status === 'open' ? 'st-open' : a.status === 'acknowledged' ? 'st-ack' : 'st-resolved';
+    const stText = a.status === 'open' ? 'OPEN' : a.status === 'acknowledged' ? 'IN PROGRESS' : 'RESOLVED';
+    return `<tr>
+      <td>${formatTime(a.time)}</td>
+      <td><strong>${a.sensorId}</strong></td>
+      <td style="font-weight:700; color:var(--danger)">${a.value.toFixed(1)} ${a.unit}</td>
+      <td>${a.direction} ${a.threshold} ${a.unit}</td>
+      <td><span class="severity-badge ${sevClass}">${a.severity}</span></td>
+      <td><span class="status-badge ${stClass}">${stText}</span></td>
+      <td>${a.responder || '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── RENDER LINE PREVIEWS ──
+function renderLinePreview(alert, sensor) {
+  const area = document.getElementById('line-preview-area');
+  area.innerHTML = `<div class="line-preview">
+    <div style="font-size:11px; color:white; margin-bottom:8px; font-weight:600;">LINE OA — Alert Notification</div>
+    <div class="line-bubble">
+      <div class="line-bubble-header" style="background:${alert.severity === 'critical' ? '#E53935' : '#F7941D'}">
+        ⚠️ Sensor Anomaly Detected
+      </div>
+      <div class="line-bubble-body">
+        <div class="line-bubble-row"><span class="label">Sensor</span><span class="val">${alert.sensorId} — ${sensor.name}</span></div>
+        <div class="line-bubble-row"><span class="label">Current Value</span><span class="val" style="color:var(--danger)">${alert.value.toFixed(1)} ${sensor.unit}</span></div>
+        <div class="line-bubble-row"><span class="label">Threshold</span><span class="val">${alert.direction} ${alert.threshold} ${sensor.unit}</span></div>
+        <div class="line-bubble-row"><span class="label">Severity</span><span class="val">${alert.severity.toUpperCase()}</span></div>
+        <div class="line-bubble-row"><span class="label">Time</span><span class="val">${formatTime(alert.time)}</span></div>
+      </div>
+      <div class="line-bubble-btn" style="color:var(--primary);">✅ ยืนยันเข้าหน้างาน</div>
+    </div>
+  </div>`;
+}
+
+function renderLineAck(alert) {
+  const area = document.getElementById('line-preview-area');
+  area.innerHTML = `<div class="line-preview">
+    <div style="font-size:11px; color:white; margin-bottom:8px; font-weight:600;">LINE OA — Acknowledgment</div>
+    <div class="line-bubble">
+      <div class="line-bubble-header" style="background:var(--primary)">
+        👷 Maintenance In Progress
+      </div>
+      <div class="line-bubble-body">
+        <div class="line-bubble-row"><span class="label">Sensor</span><span class="val">${alert.sensorId}</span></div>
+        <div class="line-bubble-row"><span class="label">Responder</span><span class="val" style="color:var(--primary)">${alert.responder}</span></div>
+        <div class="line-bubble-row"><span class="label">Acknowledged</span><span class="val">${formatTime(alert.ackTime)}</span></div>
+        <div style="margin-top:8px; padding:8px; background:#E3F2FD; border-radius:8px; font-size:11px; color:#1565C0;">
+          ${alert.responder} is heading to the site for maintenance
+        </div>
+      </div>
+      <div class="line-bubble-btn" style="color:var(--success);">✅ ซ่อมเสร็จแล้ว</div>
+    </div>
+  </div>`;
+}
+
+function renderLineResolved(alert) {
+  const mins = Math.round((alert.resolveTime - alert.ackTime) / 60000) || 1;
+  const area = document.getElementById('line-preview-area');
+  area.innerHTML = `<div class="line-preview">
+    <div style="font-size:11px; color:white; margin-bottom:8px; font-weight:600;">LINE OA — Resolution</div>
+    <div class="line-bubble">
+      <div class="line-bubble-header" style="background:var(--success)">
+        ✅ Issue Resolved
+      </div>
+      <div class="line-bubble-body">
+        <div class="line-bubble-row"><span class="label">Sensor</span><span class="val">${alert.sensorId}</span></div>
+        <div class="line-bubble-row"><span class="label">Resolved by</span><span class="val" style="color:var(--success)">${alert.responder}</span></div>
+        <div class="line-bubble-row"><span class="label">Response Time</span><span class="val">${mins} min</span></div>
+        <div class="line-bubble-row"><span class="label">Status</span><span class="val" style="color:var(--success)">NORMAL</span></div>
+        <div style="margin-top:8px; padding:8px; background:#E8F5E9; border-radius:8px; font-size:11px; color:#2E7D32;">
+          Sensor is back to normal operating range. Log recorded.
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── MAINTENANCE LOG ──
+function addMaintLog(text, color) {
+  const log = document.getElementById('maint-log');
+  if (log.querySelector('div[style]') && !log.querySelector('.log-item')) {
+    log.innerHTML = '';
+  }
+  const item = document.createElement('div');
+  item.className = 'log-item';
+  item.innerHTML = `<div class="log-dot" style="background:${color}"></div>
+    <div><div>${text}</div><div class="log-time">${formatTime(new Date())}</div></div>`;
+  log.prepend(item);
+  // Keep max 8 entries
+  while (log.children.length > 8) log.removeChild(log.lastChild);
+}
+
+// ── STATS ──
+function updateStats() {
+  const openCount = alerts.filter(a => a.status === 'open' || a.status === 'acknowledged').length;
+  document.getElementById('stat-alerts').textContent = openCount;
+  document.getElementById('stat-resolved').textContent = resolvedCount;
+  const resolved = alerts.filter(a => a.status === 'resolved' && a.ackTime && a.resolveTime);
+  if (resolved.length > 0) {
+    const avg = resolved.reduce((sum, a) => sum + (a.resolveTime - a.ackTime), 0) / resolved.length / 60000;
+    document.getElementById('stat-avgtime').textContent = Math.round(avg) || 1;
+  }
+}
+
+// ── UTILS ──
+function formatTime(d) {
+  return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function updateClock() {
+  document.getElementById('clock').textContent = new Date().toLocaleString('th-TH', {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+}
+
+// ── START ──
+renderSensorCards();
+setInterval(updateSensors, 2000);
+setInterval(updateClock, 1000);
+updateClock();
+</script>
+</body>
+</html>
