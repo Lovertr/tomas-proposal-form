@@ -229,6 +229,7 @@ module.exports = async function handler(req, res) {
           const { data, error } = await supabase
             .from("sensors")
             .select("*")
+            .eq("is_active", true)
             .order("sort_order", { ascending: true });
           if (error) throw error;
           return res.status(200).json({ sensors: data });
@@ -240,10 +241,10 @@ module.exports = async function handler(req, res) {
             .from("system_config")
             .select("*");
           if (error) throw error;
-          // Convert array to key-value object
+          // Convert array to key-value object (parse JSON-encoded values)
           const config = {};
           (data || []).forEach((row) => {
-            config[row.key] = row.value;
+            try { config[row.key] = JSON.parse(row.value); } catch (e) { config[row.key] = row.value; }
           });
           return res.status(200).json({ config });
         }
@@ -376,7 +377,7 @@ module.exports = async function handler(req, res) {
               .from("system_config")
               .upsert({
                 key,
-                value: typeof value === "string" ? JSON.stringify(value) : value,
+                value: JSON.stringify(value),
                 updated_at: new Date().toISOString(),
               });
           }
