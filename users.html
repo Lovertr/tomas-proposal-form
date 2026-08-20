@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Users — Utility Monitoring & Alert System — CONSERTECH</title>
+<style>
+  :root {
+    --primary: #1B6B93;
+    --dark: #0A2540;
+    --accent: #2AABB8;
+    --danger: #D32F2F;
+    --warning: #F7941D;
+    --success: #388E3C;
+    --bg: #EFF3F7;
+    --card: #FFFFFF;
+    --text: #1E293B;
+    --muted: #64748B;
+    --border: #E2E8F0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); }
+
+  /* -- HEADER -- */
+  .header {
+    background: linear-gradient(135deg, #0A2540 0%, var(--primary) 60%, var(--accent) 100%);
+    color: white; padding: 0; box-shadow: 0 3px 12px rgba(0,0,0,0.2);
+  }
+  .header-top {
+    display: flex; align-items: center; justify-content: space-between; padding: 14px 32px;
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .logo-box {
+    width: 46px; height: 46px; border-radius: 10px; background: white;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 11px; color: var(--primary); line-height: 1.1; text-align: center;
+  }
+  .header h1 { font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
+  .header-sub { font-size: 11px; color: rgba(255,255,255,0.65); margin-top: 2px; letter-spacing: 1px; }
+  .header-right { display: flex; align-items: center; gap: 20px; }
+  .clock { font-size: 13px; font-family: 'Consolas', monospace; color: rgba(255,255,255,0.85); }
+  .header-tagline {
+    background: rgba(0,0,0,0.15); padding: 6px 32px; font-size: 10px;
+    letter-spacing: 3px; color: rgba(255,255,255,0.5); text-transform: uppercase; text-align: center;
+  }
+
+  /* -- NAV BAR -- */
+  .nav-bar {
+    background: white; border-bottom: 1px solid var(--border);
+    display: flex; gap: 0; padding: 0 32px;
+  }
+  .nav-link {
+    padding: 12px 20px; font-size: 13px; font-weight: 600;
+    color: var(--muted); text-decoration: none; border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+  }
+  .nav-link:hover { color: var(--primary); background: #F8FAFB; }
+  .nav-link.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+  /* -- LAYOUT -- */
+  .container { max-width: 1200px; margin: 0 auto; padding: 20px 24px; }
+
+  /* -- STATS -- */
+  .stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+  .stat-card {
+    background: var(--card); border-radius: 10px; padding: 14px 18px;
+    border: 1px solid var(--border); display: flex; align-items: center; gap: 14px;
+  }
+  .stat-icon {
+    width: 44px; height: 44px; border-radius: 10px; display: flex;
+    align-items: center; justify-content: center; font-size: 22px;
+  }
+  .stat-value { font-size: 24px; font-weight: 800; font-family: 'Consolas', monospace; }
+  .stat-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* -- INFO BOX -- */
+  .info-box {
+    background: linear-gradient(135deg, #E3F2FD, #E0F7FA); border: 1px solid #90CAF9;
+    border-radius: 10px; padding: 14px 20px; margin-bottom: 20px; font-size: 13px;
+  }
+  .info-box strong { color: var(--dark); }
+  .info-box code {
+    background: white; padding: 2px 6px; border-radius: 4px; font-size: 12px;
+    font-family: 'Consolas', monospace; color: var(--primary); border: 1px solid var(--border);
+    word-break: break-all;
+  }
+
+  /* -- USER CARD -- */
+  .user-card {
+    background: var(--card); border-radius: 12px; padding: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid var(--border);
+    margin-bottom: 16px; transition: box-shadow 0.3s;
+  }
+  .user-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+  .user-card-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 12px; flex-wrap: wrap; gap: 8px;
+  }
+  .user-info { display: flex; align-items: center; gap: 12px; }
+  .user-avatar {
+    width: 44px; height: 44px; border-radius: 50%; background: var(--primary);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 700; font-size: 16px;
+  }
+  .user-name { font-size: 16px; font-weight: 700; color: var(--dark); }
+  .user-dept { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .user-role {
+    font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px;
+    background: #E3F2FD; color: #1565C0; text-transform: uppercase;
+  }
+  .user-meta { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+  .user-meta span { font-family: 'Consolas', monospace; }
+  .active-badge {
+    font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px;
+  }
+  .active-yes { background: #E8F5E9; color: var(--success); }
+  .active-no { background: #FFEBEE; color: var(--danger); }
+
+  /* -- SENSOR PERMISSIONS -- */
+  .sensor-perms {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;
+    align-items: center;
+  }
+  .sensor-perm-item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 12px; font-weight: 600; background: white; cursor: pointer;
+    transition: all 0.2s; user-select: none;
+  }
+  .sensor-perm-item:hover { border-color: var(--primary); }
+  .sensor-perm-item.checked { background: #E3F2FD; border-color: var(--primary); color: var(--primary); }
+  .sensor-perm-item input { cursor: pointer; }
+  .perm-actions {
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  }
+
+  .btn {
+    padding: 8px 16px; border: none; border-radius: 8px; font-size: 12px;
+    font-weight: 600; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--dark); }
+  .btn-outline { background: white; color: var(--primary); border: 1px solid var(--primary); }
+  .btn-outline:hover { background: var(--primary); color: white; }
+  .btn-sm { padding: 5px 10px; font-size: 11px; }
+  .btn-success { background: var(--success); color: white; }
+  .btn-success:hover { background: #2E7D32; }
+
+  /* -- FOOTER -- */
+  .footer {
+    text-align: center; padding: 20px; color: var(--muted); font-size: 11px;
+    border-top: 1px solid var(--border); margin-top: 24px;
+  }
+  .footer a { color: var(--primary); text-decoration: none; }
+
+  /* -- LOADING -- */
+  .loading-state { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; }
+
+  /* -- TOAST -- */
+  .toast-container { position: fixed; top: 80px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    padding: 12px 20px; border-radius: 10px; color: white; font-size: 13px;
+    font-weight: 600; box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    animation: toastIn 0.3s ease; min-width: 280px;
+  }
+  .toast.success { background: var(--success); }
+  .toast.error { background: var(--danger); }
+  .toast.info { background: var(--primary); }
+  @keyframes toastIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  @media (max-width: 768px) {
+    .stats-row { grid-template-columns: 1fr; }
+    .header-top { padding: 12px 16px; }
+    .container { padding: 12px; }
+    .nav-bar { padding: 0 12px; }
+    .user-card-header { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <div class="header-left">
+      <div class="logo-box">CS</div>
+      <div>
+        <h1>Utility Monitoring & Alert System</h1>
+        <div class="header-sub">CONSERTECH CO., LTD. — ระบบติดตามและแจ้งเตือนความผิดปกติ</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="clock" id="clock">--:--:--</div>
+    </div>
+  </div>
+  <div class="header-tagline">CONSULT &nbsp;&bull;&nbsp; SERVICE &nbsp;&bull;&nbsp; TECHNOLOGY</div>
+</div>
+
+<!-- NAV BAR -->
+<nav class="nav-bar">
+  <a href="/" class="nav-link">&#128202; Dashboard</a>
+  <a href="/report.html" class="nav-link">&#128203; Report</a>
+  <a href="/users.html" class="nav-link active">&#128101; Users</a>
+</nav>
+
+<!-- TOAST -->
+<div class="toast-container" id="toast-container"></div>
+
+<div class="container">
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#E3F2FD; color:var(--primary);">&#128101;</div>
+      <div><div class="stat-value" id="stat-total">0</div><div class="stat-label">Total Users / ผู้ใช้ทั้งหมด</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#E8F5E9; color:var(--success);">&#9989;</div>
+      <div><div class="stat-value" id="stat-active">0</div><div class="stat-label">Active Users / ใช้งานอยู่</div></div>
+    </div>
+  </div>
+
+  <!-- REGISTRATION INFO -->
+  <div class="info-box">
+    <strong>&#128279; ลิงก์ลงทะเบียนสำหรับผู้ใช้ใหม่ (LIFF Registration)</strong><br>
+    <span style="font-size:12px; color:var(--muted);">ผู้ใช้เพิ่มเพื่อน LINE OA แล้วเปิดลิงก์นี้เพื่อลงทะเบียนเข้าระบบ:</span><br>
+    <code>https://tomas-proposal-form.vercel.app/register.html</code>
+  </div>
+
+  <!-- USER LIST -->
+  <div id="loading-state" class="loading-state">กำลังโหลดข้อมูล...</div>
+  <div id="user-list"></div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  CONSERTECH CO., LTD. — Utility Monitoring &amp; Alert System<br>
+  CONSULT &bull; SERVICE &bull; TECHNOLOGY &nbsp;|&nbsp;
+  <a href="https://www.cs-th.com" target="_blank">www.cs-th.com</a> &nbsp;|&nbsp; info@cs-th.com
+</div>
+
+<script>
+const ALL_SENSORS = ['PT-01', 'PT-02', 'FT-01', 'FT-02', 'TT-01', 'TT-02'];
+let users = [];
+
+// ====================================================
+//  FETCH USERS
+// ====================================================
+async function fetchUsers() {
+  try {
+    const res = await fetch('/api/users');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    users = data.users || [];
+    document.getElementById('loading-state').style.display = 'none';
+    updateStats();
+    renderUsers();
+  } catch (err) {
+    document.getElementById('loading-state').textContent = 'Error loading users: ' + err.message;
+    console.error(err);
+  }
+}
+
+// ====================================================
+//  UPDATE STATS
+// ====================================================
+function updateStats() {
+  document.getElementById('stat-total').textContent = users.length;
+  document.getElementById('stat-active').textContent = users.filter(function(u) { return u.is_active; }).length;
+}
+
+// ====================================================
+//  RENDER USERS
+// ====================================================
+function renderUsers() {
+  var container = document.getElementById('user-list');
+  if (users.length === 0) {
+    container.innerHTML = '<div style="text-align:center; padding:40px; color:var(--muted);">ยังไม่มีผู้ใช้ในระบบ — ลงทะเบียนผ่าน LIFF Registration</div>';
+    return;
+  }
+
+  container.innerHTML = users.map(function(u, idx) {
+    var fullName = ((u.first_name || '') + ' ' + (u.last_name || '')).trim() || u.display_name || 'Unknown';
+    var initials = fullName.split(' ').map(function(w) { return w.charAt(0); }).join('').substring(0, 2).toUpperCase();
+    var maskedId = u.line_user_id ? u.line_user_id.substring(0, 4) + '...' + u.line_user_id.substring(u.line_user_id.length - 4) : '—';
+    var userSensors = u.sensors || [];
+
+    var sensorCheckboxes = ALL_SENSORS.map(function(sid) {
+      var isChecked = userSensors.indexOf(sid) !== -1;
+      return '<label class="sensor-perm-item' + (isChecked ? ' checked' : '') + '">' +
+        '<input type="checkbox" data-user="' + idx + '" data-sensor="' + sid + '" ' + (isChecked ? 'checked' : '') + ' onchange="togglePerm(this)">' +
+        sid +
+      '</label>';
+    }).join('');
+
+    return '<div class="user-card" id="user-card-' + idx + '">' +
+      '<div class="user-card-header">' +
+        '<div class="user-info">' +
+          '<div class="user-avatar">' + initials + '</div>' +
+          '<div>' +
+            '<div class="user-name">' + fullName + '</div>' +
+            '<div class="user-dept">' + (u.department || '—') + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex; align-items:center; gap:8px;">' +
+          '<span class="user-role">' + (u.role || 'user') + '</span>' +
+          '<span class="active-badge ' + (u.is_active ? 'active-yes' : 'active-no') + '">' +
+            (u.is_active ? 'Active' : 'Inactive') +
+          '</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="user-meta">LINE User ID: <span>' + maskedId + '</span></div>' +
+      '<div style="font-size:12px; font-weight:600; color:var(--dark); margin-bottom:8px;">Sensor Permissions / สิทธิ์รับแจ้งเตือน:</div>' +
+      '<div class="sensor-perms" id="perms-' + idx + '">' + sensorCheckboxes + '</div>' +
+      '<div class="perm-actions">' +
+        '<button class="btn btn-sm btn-outline" onclick="toggleAll(' + idx + ', true)">Select All</button>' +
+        '<button class="btn btn-sm btn-outline" onclick="toggleAll(' + idx + ', false)">Clear All</button>' +
+        '<button class="btn btn-sm btn-primary" onclick="savePerms(' + idx + ')">Save</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ====================================================
+//  PERMISSION ACTIONS
+// ====================================================
+function togglePerm(checkbox) {
+  var label = checkbox.parentElement;
+  if (checkbox.checked) {
+    label.classList.add('checked');
+  } else {
+    label.classList.remove('checked');
+  }
+}
+
+function toggleAll(userIdx, selectAll) {
+  var permsDiv = document.getElementById('perms-' + userIdx);
+  var checkboxes = permsDiv.querySelectorAll('input[type=checkbox]');
+  checkboxes.forEach(function(cb) {
+    cb.checked = selectAll;
+    togglePerm(cb);
+  });
+}
+
+async function savePerms(userIdx) {
+  var u = users[userIdx];
+  var permsDiv = document.getElementById('perms-' + userIdx);
+  var checkboxes = permsDiv.querySelectorAll('input[type=checkbox]');
+  var selectedSensors = [];
+  checkboxes.forEach(function(cb) {
+    if (cb.checked) selectedSensors.push(cb.dataset.sensor);
+  });
+
+  try {
+    var res = await fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: u.id, sensors: selectedSensors }),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    u.sensors = selectedSensors;
+    showToast('Saved permissions for ' + ((u.first_name || '') + ' ' + (u.last_name || '')).trim(), 'success');
+  } catch (err) {
+    showToast('Error saving: ' + err.message, 'error');
+    console.error(err);
+  }
+}
+
+// ====================================================
+//  HELPERS
+// ====================================================
+function updateClock() {
+  document.getElementById('clock').textContent = new Date().toLocaleString('th-TH', {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+}
+
+function showToast(msg, type) {
+  type = type || 'info';
+  var container = document.getElementById('toast-container');
+  var toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+  toast.textContent = msg;
+  container.appendChild(toast);
+  setTimeout(function() { toast.style.opacity = '0'; setTimeout(function() { toast.remove(); }, 300); }, 4000);
+}
+
+// ====================================================
+//  INIT
+// ====================================================
+setInterval(updateClock, 1000);
+updateClock();
+fetchUsers();
+</script>
+</body>
+</html>

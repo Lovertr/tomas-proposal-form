@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ลงทะเบียน — CONSERTECH Sensor Monitor</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  :root {
+    --primary: #1B6B93;
+    --dark: #0A2540;
+    --accent: #2AABB8;
+    --danger: #D32F2F;
+    --warning: #F7941D;
+    --success: #388E3C;
+    --bg: #EFF3F7;
+    --card: #FFFFFF;
+    --text: #1E293B;
+    --muted: #64748B;
+    --border: #E2E8F0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text);
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 20px;
+  }
+
+  .register-card {
+    background: var(--card); border-radius: 16px; width: 100%; max-width: 480px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08); border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .card-header {
+    background: linear-gradient(135deg, #0A2540 0%, var(--primary) 60%, var(--accent) 100%);
+    color: white; padding: 24px; text-align: center;
+  }
+  .card-header .logo-box {
+    width: 56px; height: 56px; border-radius: 14px; background: white;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 14px; color: var(--primary); line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  .card-header h1 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .card-header p { font-size: 12px; color: rgba(255,255,255,0.65); letter-spacing: 0.5px; }
+  .card-header .tagline {
+    font-size: 9px; letter-spacing: 2px; color: rgba(255,255,255,0.4);
+    margin-top: 8px; text-transform: uppercase;
+  }
+
+  .card-body { padding: 24px; }
+
+  .form-group { margin-bottom: 16px; }
+  .form-group label {
+    display: block; font-size: 13px; font-weight: 600; color: var(--dark); margin-bottom: 6px;
+  }
+  .form-group label .required { color: var(--danger); }
+  .form-group input, .form-group select {
+    width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px;
+    font-size: 14px; color: var(--text); background: white; transition: border-color 0.2s;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+  }
+  .form-group input:focus, .form-group select:focus {
+    outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(27,107,147,0.1);
+  }
+  .form-group input::placeholder { color: #CBD5E1; }
+  .form-group .helper { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  .submit-btn {
+    width: 100%; padding: 14px; border: none; border-radius: 10px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: white; font-size: 16px; font-weight: 700; cursor: pointer;
+    transition: opacity 0.2s; margin-top: 8px;
+  }
+  .submit-btn:hover { opacity: 0.9; }
+  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* -- SUCCESS STATE -- */
+  .success-state {
+    display: none; text-align: center; padding: 32px 24px;
+  }
+  .success-icon {
+    width: 80px; height: 80px; border-radius: 50%; background: #E8F5E9;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 40px; margin-bottom: 16px;
+  }
+  .success-state h2 { font-size: 20px; font-weight: 700; color: var(--success); margin-bottom: 8px; }
+  .success-state p { font-size: 14px; color: var(--muted); margin-bottom: 20px; line-height: 1.6; }
+  .back-btn {
+    padding: 12px 24px; border: none; border-radius: 10px;
+    background: var(--success); color: white; font-size: 14px;
+    font-weight: 600; cursor: pointer; transition: opacity 0.2s;
+  }
+  .back-btn:hover { opacity: 0.9; }
+
+  /* -- ERROR -- */
+  .error-msg {
+    display: none; background: #FFEBEE; color: var(--danger); padding: 10px 14px;
+    border-radius: 8px; font-size: 13px; margin-bottom: 12px; border: 1px solid #FFCDD2;
+  }
+
+  /* -- TEST MODE NOTICE -- */
+  .test-notice {
+    display: none; background: #FFF3E0; color: #E65100; padding: 10px 14px;
+    border-radius: 8px; font-size: 12px; margin-bottom: 12px; border: 1px solid #FFB74D;
+  }
+
+  .footer-text {
+    text-align: center; padding: 16px 24px; border-top: 1px solid var(--border);
+    font-size: 11px; color: var(--muted);
+  }
+  .footer-text a { color: var(--primary); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="register-card">
+
+  <!-- HEADER -->
+  <div class="card-header">
+    <div class="logo-box">CS</div>
+    <h1>Utility Monitoring & Alert System</h1>
+    <p>CONSERTECH CO., LTD. — ระบบติดตามและแจ้งเตือนความผิดปกติ</p>
+    <div class="tagline">CONSULT &bull; SERVICE &bull; TECHNOLOGY</div>
+  </div>
+
+  <!-- FORM -->
+  <div class="card-body" id="form-section">
+    <h2 style="font-size:16px; font-weight:700; color:var(--dark); margin-bottom:4px;">ลงทะเบียนผู้ใช้งาน</h2>
+    <p style="font-size:12px; color:var(--muted); margin-bottom:20px;">กรอกข้อมูลเพื่อลงทะเบียนรับแจ้งเตือนผ่าน LINE</p>
+
+    <div class="test-notice" id="test-notice">
+      &#9888; Test Mode — ไม่ได้เปิดผ่าน LINE (LIFF) กรุณากรอก LINE User ID ด้วยตนเอง
+    </div>
+
+    <div class="error-msg" id="error-msg"></div>
+
+    <form id="register-form" onsubmit="handleSubmit(event)">
+
+      <!-- LINE User ID (hidden in LIFF, visible in test mode) -->
+      <div class="form-group" id="line-uid-group" style="display:none;">
+        <label>LINE User ID <span class="required">*</span></label>
+        <input type="text" id="line-user-id" placeholder="Uxxxxxxxxxxxxx">
+        <div class="helper">สำหรับ Test Mode เท่านั้น — ปกติจะดึงจาก LINE อัตโนมัติ</div>
+      </div>
+
+      <div class="form-group">
+        <label>ชื่อ (First Name) <span class="required">*</span></label>
+        <input type="text" id="first-name" placeholder="เช่น สมชาย" required>
+      </div>
+
+      <div class="form-group">
+        <label>นามสกุล (Last Name) <span class="required">*</span></label>
+        <input type="text" id="last-name" placeholder="เช่น ใจดี" required>
+      </div>
+
+      <div class="form-group">
+        <label>แผนก (Department) <span class="required">*</span></label>
+        <select id="department" required onchange="handleDeptChange()">
+          <option value="">— เลือกแผนก —</option>
+          <option value="Dev">Dev</option>
+          <option value="Engineering">Engineering</option>
+          <option value="Maintenance">Maintenance</option>
+          <option value="Production">Production</option>
+          <option value="QC">QC</option>
+          <option value="Management">Management</option>
+          <option value="other">อื่นๆ (Other)</option>
+        </select>
+      </div>
+
+      <div class="form-group" id="other-dept-group" style="display:none;">
+        <label>ระบุแผนก <span class="required">*</span></label>
+        <input type="text" id="other-dept" placeholder="กรอกชื่อแผนก">
+      </div>
+
+      <button type="submit" class="submit-btn" id="submit-btn">ลงทะเบียน</button>
+    </form>
+  </div>
+
+  <!-- SUCCESS -->
+  <div class="success-state" id="success-section">
+    <div class="success-icon">&#9989;</div>
+    <h2>ลงทะเบียนสำเร็จ</h2>
+    <p>ข้อมูลของคุณถูกบันทึกเรียบร้อยแล้ว<br>คุณจะได้รับการแจ้งเตือนผ่าน LINE เมื่อเกิดเหตุผิดปกติ</p>
+    <button class="back-btn" id="close-btn" onclick="closeLiff()">กลับไปที่ LINE</button>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer-text">
+    CONSERTECH CO., LTD.<br>
+    <a href="https://www.cs-th.com" target="_blank">www.cs-th.com</a> | info@cs-th.com
+  </div>
+
+</div>
+
+<script>
+var lineUserId = '';
+var isInLiff = false;
+
+// ====================================================
+//  LIFF INIT
+// ====================================================
+async function initLiff() {
+  try {
+    await liff.init({ liffId: '0000000000-xxxxxxxx' });
+    if (liff.isLoggedIn()) {
+      isInLiff = true;
+      var profile = await liff.getProfile();
+      lineUserId = profile.userId;
+      // Auto-fill name from LINE profile if available
+      if (profile.displayName) {
+        var parts = profile.displayName.split(' ');
+        if (parts.length >= 2) {
+          document.getElementById('first-name').value = parts[0];
+          document.getElementById('last-name').value = parts.slice(1).join(' ');
+        } else {
+          document.getElementById('first-name').value = profile.displayName;
+        }
+      }
+    } else {
+      // Not logged in — LIFF is available but user not authenticated
+      showTestMode();
+    }
+  } catch (err) {
+    console.log('LIFF init failed (not in LINE context):', err.message);
+    showTestMode();
+  }
+}
+
+function showTestMode() {
+  document.getElementById('test-notice').style.display = 'block';
+  document.getElementById('line-uid-group').style.display = 'block';
+}
+
+// ====================================================
+//  DEPARTMENT TOGGLE
+// ====================================================
+function handleDeptChange() {
+  var sel = document.getElementById('department');
+  var otherGroup = document.getElementById('other-dept-group');
+  var otherInput = document.getElementById('other-dept');
+  if (sel.value === 'other') {
+    otherGroup.style.display = 'block';
+    otherInput.required = true;
+  } else {
+    otherGroup.style.display = 'none';
+    otherInput.required = false;
+  }
+}
+
+// ====================================================
+//  SUBMIT
+// ====================================================
+async function handleSubmit(e) {
+  e.preventDefault();
+  var errorEl = document.getElementById('error-msg');
+  errorEl.style.display = 'none';
+
+  var firstName = document.getElementById('first-name').value.trim();
+  var lastName = document.getElementById('last-name').value.trim();
+  var dept = document.getElementById('department').value;
+  var userId = isInLiff ? lineUserId : document.getElementById('line-user-id').value.trim();
+
+  if (dept === 'other') {
+    dept = document.getElementById('other-dept').value.trim();
+    if (!dept) {
+      showError('กรุณาระบุชื่อแผนก');
+      return;
+    }
+  }
+
+  if (!firstName || !lastName || !dept) {
+    showError('กรุณากรอกข้อมูลให้ครบถ้วน');
+    return;
+  }
+
+  if (!userId) {
+    showError('ไม่พบ LINE User ID — กรุณาเปิดผ่าน LINE หรือกรอก User ID');
+    return;
+  }
+
+  var btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'กำลังลงทะเบียน...';
+
+  try {
+    var res = await fetch('/api/register-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        line_user_id: userId,
+        first_name: firstName,
+        last_name: lastName,
+        department: dept,
+      }),
+    });
+
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Registration failed');
+
+    // Show success
+    document.getElementById('form-section').style.display = 'none';
+    document.getElementById('success-section').style.display = 'block';
+  } catch (err) {
+    showError('เกิดข้อผิดพลาด: ' + err.message);
+    btn.disabled = false;
+    btn.textContent = 'ลงทะเบียน';
+  }
+}
+
+function showError(msg) {
+  var errorEl = document.getElementById('error-msg');
+  errorEl.textContent = msg;
+  errorEl.style.display = 'block';
+}
+
+// ====================================================
+//  CLOSE LIFF
+// ====================================================
+function closeLiff() {
+  if (isInLiff && liff.isInClient()) {
+    liff.closeWindow();
+  } else {
+    document.getElementById('close-btn').textContent = 'ลงทะเบียนสำเร็จแล้ว';
+    document.getElementById('close-btn').disabled = true;
+  }
+}
+
+// ====================================================
+//  INIT
+// ====================================================
+initLiff();
+</script>
+</body>
+</html>
