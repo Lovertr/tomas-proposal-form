@@ -39,6 +39,23 @@ async function multicastLineMessage(userIds, messages) {
   });
 }
 
+// ─── System Config Cache ─────────────────────────────────────────────
+let reAlertIntervalMin = 5; // default, overridden by system_config
+let configCacheTime = 0;
+const CONFIG_CACHE_TTL = 120000; // 2 minutes
+
+async function loadReAlertInterval() {
+  if (Date.now() - configCacheTime < CONFIG_CACHE_TTL) return;
+  try {
+    const { data } = await supabase.from("system_config").select("value").eq("key", "re_alert_interval").single();
+    if (data && data.value != null) {
+      var parsed = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+      reAlertIntervalMin = parseInt(parsed, 10) || 5;
+    }
+  } catch (e) { /* use default */ }
+  configCacheTime = Date.now();
+}
+
 // ─── Sensor Thresholds Cache ─────────────────────────────────────────
 let sensorsCache = null;
 let cacheTime = 0;
@@ -206,6 +223,7 @@ module.exports = async function handler(req, res) {
 
   try {
     const sensors = await getSensors();
+    await loadReAlertInterval();
     const body = req.body;
 
     // Normalize to array
@@ -257,7 +275,7 @@ module.exports = async function handler(req, res) {
       if (anomaly.is_anomaly) {
         const { data: existingAlert } = await supabase
           .from("alerts")
-          .select("id")
+          .select("id, created_at, status")
           .eq("sensor_id", sensor_id)
           .in("status", ["open", "acknowledged"])
           .order("created_at", { ascending: false })
@@ -342,6 +360,95 @@ module.exports = async function handler(req, res) {
         } else {
           result.alert_id = existingAlert.id;
           result.alert_status = "existing";
+
+          // Re-alert: if alert is OPEN (not acknowledged) and older than configured interval
+          if (existingAlert.status === "open") {
+            const reAlertMs = reAlertIntervalMin * 60 * 1000;
+            const alertAgeMs = Date.now() - new Date(existingAlert.created_at).getTime();
+            if (alertAgeMs > reAlertMs) {
+              // Check if reminder was sent recently (within last interval)
+              const intervalAgo = new Date(Date.now() - reAlertMs).toISOString();
+              const { data: recentReminder } = await supabase
+                .from("alert_actions")
+                .select("id")
+                .eq("alert_id", existingAlert.id)
+                .eq("action", "reminder")
+                .gte("created_at", intervalAgo)
+                .limit(1);
+
+              if (!recentReminder || recentReminder.length === 0) {
+                const alertMinutes = Math.round(alertAgeMs / 60000);
+                const timestamp = new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok" });
+
+                // Send reminder to assigned users
+                if (process.env.LINE_CHANNEL_ACCESS_TOKEN) {
+                  try {
+                    const { data: perms } = await supabase
+                      .from("user_sensor_permissions")
+                      .select("user_id, users(line_user_id)")
+                      .eq("sensor_id", sensor_id);
+                    const lineUserIds = (perms || []).map((p) => p.users?.line_user_id).filter(Boolean);
+
+                    for (const uid of lineUserIds) {
+                      const reminderFlex = {
+                        type: "flex",
+                        altText: `🔴 เตือนซ้ำ — ${sensor.name} ยังไม่มีผู้ดูแล (${alertMinutes} นาที)`,
+                        contents: {
+                          type: "bubble",
+                          header: {
+                            type: "box", layout: "vertical", backgroundColor: "#B71C1C",
+                            contents: [{ type: "text", text: "🔴 เตือนซ้ำ — ยังไม่มีผู้รับผิดชอบ", color: "#FFFFFF", weight: "bold", size: "md", wrap: true }],
+                          },
+                          body: {
+                            type: "box", layout: "vertical", spacing: "sm",
+                            contents: [
+                              { type: "text", text: sensor.name, weight: "bold", size: "md" },
+                              { type: "separator" },
+                              { type: "box", layout: "horizontal", contents: [
+                                { type: "text", text: "Sensor", color: "#999999", size: "sm", flex: 2 },
+                                { type: "text", text: sensor.id, weight: "bold", size: "sm", flex: 3 },
+                              ]},
+                              { type: "box", layout: "horizontal", contents: [
+                                { type: "text", text: "ค่าปัจจุบัน", color: "#999999", size: "sm", flex: 2 },
+                                { type: "text", text: `${numValue} ${sensor.unit}`, weight: "bold", color: "#D32F2F", size: "sm", flex: 3 },
+                              ]},
+                              { type: "box", layout: "horizontal", contents: [
+                                { type: "text", text: "ระยะเวลา", color: "#999999", size: "sm", flex: 2 },
+                                { type: "text", text: `${alertMinutes} นาที`, weight: "bold", color: "#B71C1C", size: "sm", flex: 3 },
+                              ]},
+                              { type: "text", text: "⚠️ Alert นี้ยังไม่มีผู้เข้าดูแล กรุณาตรวจสอบ!", size: "sm", color: "#B71C1C", wrap: true, margin: "md" },
+                            ],
+                          },
+                          footer: {
+                            type: "box", layout: "vertical",
+                            contents: [{
+                              type: "button", style: "primary", color: "#B71C1C",
+                              action: {
+                                type: "uri",
+                                label: "✅ ยืนยันเข้าหน้างาน",
+                                uri: `https://tomas-proposal-form.vercel.app/api/acknowledge-web?alert_id=${existingAlert.id}&line_user_id=${uid}&sensor_id=${sensor.id}`,
+                              },
+                            }],
+                          },
+                        },
+                      };
+                      await sendLineMessage(uid, [reminderFlex]);
+                    }
+
+                    // Log reminder
+                    await supabase.from("alert_actions").insert({
+                      alert_id: existingAlert.id,
+                      action: "reminder",
+                      note: `Reminder sent — alert open for ${alertMinutes} minutes, value: ${numValue} ${sensor.unit}`,
+                    });
+                    result.reminder_sent = true;
+                  } catch (reminderErr) {
+                    console.error("Reminder error:", reminderErr.message);
+                  }
+                }
+              }
+            }
+          }
         }
       }
 
