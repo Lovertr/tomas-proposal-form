@@ -264,7 +264,7 @@ module.exports = async function handler(req, res) {
           const { id, name, name_th, sensor_type, unit, signal_type, connection_protocol,
                   connection_config, polling_interval_sec, location,
                   min_value, max_value, normal_min, normal_max,
-                  threshold_low, threshold_high, nominal, sort_order } = body;
+                  threshold_low, threshold_high, nominal, sort_order, card_color } = body;
 
           if (!id || !name || !sensor_type || !unit) {
             return res.status(400).json({ error: "id, name, sensor_type, unit are required" });
@@ -289,6 +289,7 @@ module.exports = async function handler(req, res) {
             threshold_high: threshold_high ?? null,
             nominal: nominal ?? 50,
             sort_order: sort_order ?? 99,
+            card_color: card_color || null,
             is_active: true,
           }).select().single();
 
@@ -330,6 +331,7 @@ module.exports = async function handler(req, res) {
             "connection_config", "polling_interval_sec", "location",
             "min_value", "max_value", "normal_min", "normal_max",
             "threshold_low", "threshold_high", "nominal", "sort_order", "is_active",
+            "card_color",
           ];
           for (const key of allowedFields) {
             if (updates[key] !== undefined) dbUpdates[key] = updates[key];
