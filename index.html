@@ -723,6 +723,27 @@ async function fetchDashboardData() {
       });
     }
 
+    // Sync: detect alerts resolved via LINE (no longer in open list)
+    const openApiIds = new Set((alertsRes.alerts || []).map(a => a.id));
+    alerts.forEach(a => {
+      if (a.apiId && !openApiIds.has(a.apiId) && a.status !== 'resolved') {
+        a.status = 'resolved';
+        a.resolveTime = a.resolveTime || new Date();
+      }
+    });
+
+    // Force reset: if a sensor has NO open alerts but is still showing alarm, reset it
+    SENSORS.forEach(s => {
+      const d = sensorData[s.id];
+      const hasOpenAlert = alerts.some(a => a.sensorId === s.id && (a.status === 'open' || a.status === 'acknowledged'));
+      const apiHasOpen = (alertsRes.alerts || []).some(a => a.sensor_id === s.id);
+      if (!hasOpenAlert && !apiHasOpen && d.alarm) {
+        d.alarm = false;
+        d.status = 'normal';
+        d.value = s.nominal;
+      }
+    });
+
     if (summaryRes) {
       document.getElementById('stat-alerts').textContent = summaryRes.open_alerts || 0;
       document.getElementById('stat-resolved').textContent = summaryRes.resolved_today || 0;
@@ -743,7 +764,21 @@ async function fetchAlertHistory() {
     if (histRes.alerts && histRes.alerts.length > 0) {
       histRes.alerts.forEach(apiAlert => {
         const exists = alerts.find(a => a.apiId === apiAlert.id);
-        if (exists) return;
+        if (exists) {
+          // Update status from API (e.g., resolved via LINE)
+          if (exists.status !== apiAlert.status) {
+            exists.status = apiAlert.status;
+            if (apiAlert.status === 'resolved') {
+              exists.resolveTime = apiAlert.resolved_at ? new Date(apiAlert.resolved_at) : new Date();
+              exists.resolvedBy = apiAlert.resolved_by_name || null;
+            }
+            if (apiAlert.status === 'acknowledged' && !exists.responder) {
+              exists.responder = apiAlert.acknowledged_by_name || null;
+              exists.ackTime = apiAlert.acknowledged_at ? new Date(apiAlert.acknowledged_at) : null;
+            }
+          }
+          return;
+        }
         alerts.push({
           id: Date.now() + Math.random(),
           apiId: apiAlert.id,
@@ -997,7 +1032,8 @@ async function sendNormalValues() {
 // ====================================================
 //  ACKNOWLEDGE / RESOLVE
 // ====================================================
-const responders = ['Somchai K.', 'Wichai P.', 'Nattapong S.', 'Kittisak M.'];
+// Responder name for dashboard-initiated actions (simulator)
+const DASHBOARD_RESPONDER = 'Consertech ทดสอบ';
 
 async function acknowledgeLatest() {
   const open = alerts.find(a => a.status === 'open');
@@ -1010,7 +1046,7 @@ async function acknowledgeLatest() {
   }
 
   open.status = 'acknowledged';
-  open.responder = responders[Math.floor(Math.random() * responders.length)];
+  open.responder = DASHBOARD_RESPONDER;
   open.ackTime = new Date();
   renderAlerts();
   renderLineAck(open);
@@ -1109,7 +1145,7 @@ function renderAlerts() {
       : a.status === 'acknowledged'
         ? '<button class="btn btn-success btn-sm" onclick="event.stopPropagation();resolveAlert(\'' + a.id + '\')">RESOLVE</button>'
         : '<span style="color:var(--success); font-size:11px;">Done</span>';
-    const responderText = a.responder || a.resolvedBy || '—';
+    const responderText = a.resolvedBy || a.responder || '—';
     return '<tr>' +
       '<td>' + formatTime(a.time) + '</td>' +
       '<td><strong>' + a.sensorId + '</strong></td>' +
@@ -1131,7 +1167,7 @@ async function acknowledgeAlert(id) {
     if (result) showToast('Acknowledged via API', 'success');
   }
   alert.status = 'acknowledged';
-  alert.responder = responders[Math.floor(Math.random() * responders.length)];
+  alert.responder = DASHBOARD_RESPONDER;
   alert.ackTime = new Date();
   renderAlerts();
   renderLineAck(alert);
@@ -1303,7 +1339,7 @@ function renderLineResolved(alert) {
   document.getElementById('line-preview-area').innerHTML = '<div class="line-preview">' +
     '<div style="font-size:11px; color:white; margin-bottom:8px; font-weight:600;">LINE OA — Resolved</div>' +
     '<div class="line-bubble">' +
-      '<div class="line-bubble-header" style="background:var(--success)">แก้ไขเสร็จแล้ว — ' + alert.sensorId + '</div>' +
+      '<div class="line-bubble-header" style="background:var(--success)">แก้ไขเสร���จแล้ว — ' + alert.sensorId + '</div>' +
       '<div class="line-bubble-body">' +
         '<div class="line-bubble-row"><span class="label">แก้ไขโดย</span><span class="val" style="color:var(--success)">' + alert.responder + '</span></div>' +
         '<div class="line-bubble-row"><span class="label">เวลาแก้ไข</span><span class="val">' + mins + ' นาที</span></div>' +
@@ -1386,8 +1422,9 @@ setTimeout(function() {
   fetchAlertHistory();
 }, 500);
 
-// Poll API data every 5 seconds
+// Poll API data every 5 seconds + alert history every 15 seconds
 setInterval(function() { fetchDashboardData(); }, 5000);
+setInterval(function() { fetchAlertHistory(); }, 15000);
 </script>
 </body>
 </html>
