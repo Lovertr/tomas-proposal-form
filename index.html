@@ -8,7 +8,7 @@
 <style>
   :root {
     --primary: #1B6B93;
-    --dark: #0D3B5E;
+    --dark: #0A2540;
     --accent: #2AABB8;
     --danger: #D32F2F;
     --warning: #F7941D;
@@ -25,7 +25,7 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); }
 
-  /* ── HEADER ── */
+  /* -- HEADER -- */
   .header {
     background: linear-gradient(135deg, #0A2540 0%, var(--primary) 60%, var(--accent) 100%);
     color: white; padding: 0; box-shadow: 0 3px 12px rgba(0,0,0,0.2);
@@ -49,37 +49,37 @@
   }
   .conn-dot { width: 8px; height: 8px; border-radius: 50%; }
   .conn-dot.live { background: #4CAF50; animation: pulse 2s infinite; }
-  .conn-dot.demo { background: #FF9800; }
-  .conn-dot.off { background: #F44336; }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
   .clock { font-size: 13px; font-family: 'Consolas', monospace; color: rgba(255,255,255,0.85); }
   .header-tagline {
     background: rgba(0,0,0,0.15); padding: 6px 32px; font-size: 10px;
     letter-spacing: 3px; color: rgba(255,255,255,0.5); text-transform: uppercase; text-align: center;
   }
-
-  /* ── CONFIG BAR ── */
-  .config-bar {
-    background: linear-gradient(135deg, #E3F2FD, #E0F7FA); border: 1px solid #90CAF9;
-    border-radius: 10px; padding: 14px 20px; margin-bottom: 16px;
-    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  .btn-gear {
+    background:none; border:none; color:rgba(255,255,255,0.7); cursor:pointer;
+    font-size:18px; padding:6px 8px; border-radius:6px; transition:all 0.2s;
   }
-  .config-bar.connected { background: linear-gradient(135deg, #E8F5E9, #F1F8E9); border-color: #A5D6A7; }
-  .config-label { font-size: 13px; font-weight: 600; color: var(--dark); }
-  .config-label small { font-weight: 400; color: var(--muted); display: block; font-size: 11px; }
-  .config-inputs { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .config-inputs input {
-    padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
-    font-size: 12px; font-family: 'Consolas', monospace; width: 220px;
-  }
-  .config-inputs input:focus { outline: none; border-color: var(--primary); }
+  .btn-gear:hover { color:white; background:rgba(255,255,255,0.15); }
 
-  /* ── LAYOUT ── */
+  /* -- NAV BAR -- */
+  .nav-bar {
+    background: white; border-bottom: 1px solid var(--border);
+    display: flex; gap: 0; padding: 0 32px;
+  }
+  .nav-link {
+    padding: 12px 20px; font-size: 13px; font-weight: 600;
+    color: var(--muted); text-decoration: none; border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+  }
+  .nav-link:hover { color: var(--primary); background: #F8FAFB; }
+  .nav-link.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+  /* -- LAYOUT -- */
   .container { max-width: 1440px; margin: 0 auto; padding: 20px 24px; }
   .grid-sensors { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
   .grid-bottom { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
 
-  /* ── DEMO CONTROLS ── */
+  /* -- DEMO CONTROLS -- */
   .demo-bar {
     background: linear-gradient(135deg, #FFF3E0, #FFE0B2); border: 1px solid #FFB74D;
     border-radius: 10px; padding: 14px 20px; margin-bottom: 16px;
@@ -105,7 +105,7 @@
   .btn-outline:hover:not(:disabled) { background: var(--primary); color: white; }
   .btn-sm { padding: 5px 10px; font-size: 11px; }
 
-  /* ── STATS ROW ── */
+  /* -- STATS ROW -- */
   .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
   .stat-card {
     background: var(--card); border-radius: 10px; padding: 14px 18px;
@@ -118,11 +118,11 @@
   .stat-value { font-size: 24px; font-weight: 800; font-family: 'Consolas', monospace; }
   .stat-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
-  /* ── SENSOR CARD ── */
+  /* -- SENSOR CARD -- */
   .sensor-card {
     background: var(--card); border-radius: 12px; padding: 20px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid var(--border);
-    position: relative; overflow: hidden; transition: box-shadow 0.3s;
+    position: relative; overflow: hidden; transition: box-shadow 0.3s; cursor: pointer;
   }
   .sensor-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
   .sensor-card.alarm {
@@ -153,7 +153,7 @@
   .mini-chart-wrap { height: 50px; margin-top: 10px; position: relative; overflow: hidden; }
   .mini-chart { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
-  /* ── GAUGE BAR ── */
+  /* -- GAUGE BAR -- */
   .gauge-bar-container { margin-top: 10px; }
   .gauge-bar-bg {
     height: 8px; background: #E8ECF0; border-radius: 4px; position: relative; overflow: visible;
@@ -168,7 +168,7 @@
   .threshold-line.lo { background: #1976D2; }
   .threshold-line.warn { background: var(--warning); }
 
-  /* ── PANELS ── */
+  /* -- PANELS -- */
   .panel {
     background: var(--card); border-radius: 12px; padding: 20px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid var(--border);
@@ -200,7 +200,7 @@
   .st-ack { background: #E3F2FD; color: #1565C0; }
   .st-resolved { background: #E8F5E9; color: var(--success); }
 
-  /* ── LOG ── */
+  /* -- LOG -- */
   .log-item {
     padding: 10px 0; border-bottom: 1px solid var(--border);
     display: flex; align-items: flex-start; gap: 10px; font-size: 12px;
@@ -209,8 +209,8 @@
   .log-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
   .log-time { color: var(--muted); font-size: 11px; margin-top: 2px; }
 
-  /* ── LINE PREVIEW ── */
-  .line-preview { background: #7BC67E; border-radius: 12px; padding: 16px; margin-top: 16px; }
+  /* -- LINE PREVIEW -- */
+  .line-preview { background: #7BC67E; border-radius: 12px; padding: 16px; }
   .line-bubble {
     background: white; border-radius: 16px; padding: 0; overflow: hidden;
     max-width: 300px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 12px;
@@ -226,14 +226,14 @@
     text-decoration: none; cursor: pointer;
   }
 
-  /* ── FOOTER ── */
+  /* -- FOOTER -- */
   .footer {
     text-align: center; padding: 20px; color: var(--muted); font-size: 11px;
     border-top: 1px solid var(--border); margin-top: 24px;
   }
   .footer a { color: var(--primary); text-decoration: none; }
 
-  /* ── TOAST ── */
+  /* -- TOAST -- */
   .toast-container { position: fixed; top: 80px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
   .toast {
     padding: 12px 20px; border-radius: 10px; color: white; font-size: 13px;
@@ -245,41 +245,39 @@
   .toast.info { background: var(--primary); }
   @keyframes toastIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-  /* ── SETTINGS MODAL ── */
-  .settings-overlay {
+  /* -- MODAL OVERLAY -- */
+  .modal-overlay {
     position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:10000;
     display:none; align-items:center; justify-content:center;
   }
-  .settings-overlay.active { display:flex; }
-  .settings-modal {
-    background:#fff; border-radius:16px; width:92%; max-width:760px;
+  .modal-overlay.active { display:flex; }
+  .modal-content {
+    background:#fff; border-radius:16px; width:92%; max-width:800px;
     max-height:85vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.3);
   }
-  .settings-header {
+  .modal-header {
     padding:20px 24px; border-bottom:1px solid var(--border);
     display:flex; justify-content:space-between; align-items:center;
     position:sticky; top:0; background:white; z-index:1; border-radius:16px 16px 0 0;
   }
-  .settings-header h2 { font-size:18px; font-weight:700; margin:0; }
-  .settings-close {
+  .modal-header h2 { font-size:18px; font-weight:700; margin:0; }
+  .modal-close {
     background:none; border:none; font-size:24px; cursor:pointer;
     color:var(--muted); padding:4px 8px; line-height:1;
   }
-  .settings-body { padding:20px 24px; }
+  .modal-body { padding:20px 24px; }
+  .modal-footer {
+    padding:16px 24px; border-top:1px solid var(--border);
+    display:flex; justify-content:flex-end; gap:8px;
+    position:sticky; bottom:0; background:white; border-radius:0 0 16px 16px;
+  }
+
+  /* -- SETTINGS MODAL -- */
   .settings-section { margin-bottom:24px; }
   .settings-section h3 {
     font-size:14px; font-weight:700; color:var(--dark);
     margin-bottom:12px; border-bottom:2px solid var(--bg); padding-bottom:8px;
   }
-  .settings-field { margin-bottom:12px; }
-  .settings-field label {
-    display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:4px;
-  }
-  .settings-field input[type=text] {
-    width:100%; padding:8px 12px; border:1px solid var(--border); border-radius:8px;
-    font-size:13px; font-family:'Consolas',monospace;
-  }
-  .settings-field input:focus { outline:none; border-color:var(--primary); }
   .threshold-table { width:100%; border-collapse:collapse; font-size:12px; }
   .threshold-table th {
     text-align:center; padding:8px 6px; background:var(--bg);
@@ -293,35 +291,54 @@
   }
   .threshold-table input[type=number]:focus { outline:none; border-color:var(--primary); }
   .threshold-table input:disabled { background:var(--bg); color:var(--muted); }
-  .settings-footer {
-    padding:16px 24px; border-top:1px solid var(--border);
-    display:flex; justify-content:flex-end; gap:8px;
-    position:sticky; bottom:0; background:white; border-radius:0 0 16px 16px;
-  }
-  .btn-gear {
-    background:none; border:none; color:rgba(255,255,255,0.7); cursor:pointer;
-    font-size:18px; padding:6px 8px; border-radius:6px; transition:all 0.2s;
-  }
-  .btn-gear:hover { color:white; background:rgba(255,255,255,0.15); }
-  .auto-status {
-    font-size:12px; color:var(--muted); padding:8px 16px; background:var(--bg);
-    border-radius:8px; margin-bottom:16px; display:flex; align-items:center;
-    gap:8px; justify-content:space-between;
-  }
-  .auto-status.connected { background:#E8F5E9; color:var(--success); }
-  .auto-status a { color:var(--primary); cursor:pointer; font-size:11px; font-weight:600; text-decoration:none; }
-  .auto-status a:hover { text-decoration:underline; }
+
+  /* -- SENSOR DETAIL MODAL -- */
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .detail-item { padding: 12px; background: var(--bg); border-radius: 8px; }
+  .detail-item .dlabel { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .detail-item .dvalue { font-size: 18px; font-weight: 700; font-family: 'Consolas', monospace; }
 
   @media (max-width: 1024px) {
     .grid-sensors { grid-template-columns: repeat(2, 1fr); }
     .grid-bottom { grid-template-columns: 1fr; }
     .stats-row { grid-template-columns: repeat(2, 1fr); }
   }
-  @media (max-width: 640px) {
-    .grid-sensors { grid-template-columns: 1fr; }
+  @media (max-width: 768px) {
+    body { overflow-x: hidden; }
+    .header-top { padding: 10px 12px; flex-wrap: wrap; gap: 8px; }
+    .header h1 { font-size: 14px; }
+    .header-sub { font-size: 9px; }
+    .header-right { gap: 8px; }
+    .clock { font-size: 11px; }
+    .header-tagline { padding: 4px 12px; font-size: 8px; letter-spacing: 2px; }
+    .nav-bar { padding: 0 8px; overflow-x: auto; }
+    .nav-link { padding: 10px 12px; font-size: 12px; white-space: nowrap; }
+    .container { padding: 10px 8px; }
+    .demo-bar { padding: 10px 12px; flex-direction: column; align-items: stretch; }
+    .demo-buttons { justify-content: center; }
+    .btn { padding: 6px 10px; font-size: 11px; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .stat-card { padding: 10px 12px; gap: 10px; }
+    .stat-value { font-size: 20px; }
+    .stat-icon { width: 36px; height: 36px; font-size: 18px; }
+    .grid-sensors { grid-template-columns: 1fr; gap: 10px; }
+    .sensor-value { font-size: 28px; }
+    .grid-bottom { grid-template-columns: 1fr; gap: 10px; }
+    .panel { padding: 14px 10px; overflow-x: auto; }
+    .alert-table { font-size: 11px; min-width: 600px; }
+    .alert-table th, .alert-table td { padding: 6px 6px; }
+    .detail-grid { grid-template-columns: 1fr; }
+    .modal-content { width: 96%; max-height: 90vh; }
+    .modal-header { padding: 14px 16px; }
+    .modal-body { padding: 14px 16px; }
+    .toast { min-width: 200px; font-size: 12px; padding: 10px 14px; }
+    .toast-container { top: 60px; right: 8px; left: 8px; }
+  }
+  @media (max-width: 400px) {
     .stats-row { grid-template-columns: 1fr; }
-    .header-top { padding: 12px 16px; }
-    .container { padding: 12px; }
+    .header-right { justify-content: flex-end; width: 100%; }
+    .sensor-value { font-size: 24px; }
+    .logo-box { width: 36px; height: 36px; font-size: 9px; }
   }
 </style>
 </head>
@@ -338,10 +355,10 @@
       </div>
     </div>
     <div class="header-right">
-      <button class="btn-gear" onclick="openSettings()" title="Settings / ตั้งค่า">⚙️</button>
-      <div class="conn-status" id="conn-status">
-        <span class="conn-dot demo" id="conn-dot"></span>
-        <span id="conn-text">DEMO</span>
+      <button class="btn-gear" onclick="openSettings()" title="Settings / ตั้งค่า">&#9881;</button>
+      <div class="conn-status">
+        <span class="conn-dot live"></span>
+        <span>LIVE</span>
       </div>
       <div class="clock" id="clock">--:--:--</div>
     </div>
@@ -349,16 +366,17 @@
   <div class="header-tagline">CONSULT &nbsp;&bull;&nbsp; SERVICE &nbsp;&bull;&nbsp; TECHNOLOGY</div>
 </div>
 
+<!-- NAV BAR -->
+<nav class="nav-bar">
+  <a href="/" class="nav-link active">&#128202; Dashboard</a>
+  <a href="/report.html" class="nav-link">&#128203; Report</a>
+  <a href="/users.html" class="nav-link">&#128101; Users</a>
+</nav>
+
 <!-- TOAST -->
 <div class="toast-container" id="toast-container"></div>
 
 <div class="container">
-
-  <!-- AUTO-STATUS BAR -->
-  <div class="auto-status" id="auto-status">
-    <span id="auto-status-text">🔌 Demo Mode — กด ⚙️ เพื่อตั้งค่า API Key และเชื่อมต่อระบบจริง</span>
-    <a onclick="openSettings()">⚙️ Settings</a>
-  </div>
 
   <!-- DEMO CONTROLS -->
   <div class="demo-bar">
@@ -367,32 +385,33 @@
       <small>กดปุ่มเพื่อส่งค่าเซนเซอร์ (Live Mode = ส่งจริงผ่าน API + แจ้ง LINE)</small>
     </div>
     <div class="demo-buttons">
-      <button class="btn btn-danger" onclick="triggerAlarm('pressure')">Pressure Alarm</button>
-      <button class="btn btn-warning" onclick="triggerAlarm('temperature')">Temp Warning</button>
-      <button class="btn btn-danger" onclick="triggerAlarm('flow')">Flow Alarm</button>
-      <button class="btn btn-success" onclick="sendNormalValues()">Send Normal</button>
-      <button class="btn btn-primary" onclick="acknowledgeLatest()">Acknowledge</button>
-      <button class="btn btn-success" onclick="resolveLatest()">Resolve</button>
-      <button class="btn btn-outline" onclick="resetAll()">Reset</button>
+      <button class="btn btn-danger" onclick="triggerAlarm('pressure')">Pressure Alarm (แรงดัน)</button>
+      <button class="btn btn-warning" onclick="triggerAlarm('temperature')">Temp Warning (อุณหภูมิ)</button>
+      <button class="btn btn-danger" onclick="triggerAlarm('flow')">Flow Alarm (อัตราไหล)</button>
+      <button class="btn btn-success" onclick="sendNormalValues()">Send Normal (ค่าปกติ)</button>
+      <button class="btn btn-primary" onclick="acknowledgeLatest()">ACK (ยืนยัน)</button>
+      <button class="btn btn-success" onclick="resolveLatest()">Resolve (ซ่อมเสร็จ)</button>
+      <button class="btn btn-outline" onclick="resetAll()">Reset (รีเซ็ต)</button>
+      <button class="btn btn-outline" onclick="clearTestData()" style="color:var(--danger); border-color:var(--danger);">Clear (ล้างข้อมูล)</button>
     </div>
   </div>
 
   <!-- STATS ROW -->
   <div class="stats-row">
     <div class="stat-card">
-      <div class="stat-icon" style="background:#E3F2FD; color:var(--primary);">📡</div>
+      <div class="stat-icon" style="background:#E3F2FD; color:var(--primary);">&#128225;</div>
       <div><div class="stat-value" id="stat-sensors">6</div><div class="stat-label">Active Sensors / จุดตรวจวัด</div></div>
     </div>
     <div class="stat-card">
-      <div class="stat-icon" style="background:#FFEBEE; color:var(--danger);">🔔</div>
+      <div class="stat-icon" style="background:#FFEBEE; color:var(--danger);">&#128276;</div>
       <div><div class="stat-value" id="stat-alerts">0</div><div class="stat-label">Open Alerts / แจ้งเตือน</div></div>
     </div>
     <div class="stat-card">
-      <div class="stat-icon" style="background:#E8F5E9; color:var(--success);">✅</div>
+      <div class="stat-icon" style="background:#E8F5E9; color:var(--success);">&#9989;</div>
       <div><div class="stat-value" id="stat-resolved">0</div><div class="stat-label">Resolved Today / แก้ไขแล้ว</div></div>
     </div>
     <div class="stat-card">
-      <div class="stat-icon" style="background:#FFF3E0; color:var(--warning);">⏱️</div>
+      <div class="stat-icon" style="background:#FFF3E0; color:var(--warning);">&#9201;</div>
       <div><div class="stat-value" id="stat-avgtime">—</div><div class="stat-label">Avg Response (min)</div></div>
     </div>
   </div>
@@ -403,10 +422,10 @@
   <!-- BOTTOM GRID -->
   <div class="grid-bottom">
     <div class="panel">
-      <div class="panel-title"><span class="icon">🚨</span> Alert History / ประวัติการแจ้งเตือน</div>
+      <div class="panel-title"><span class="icon">&#128680;</span> Alert History / ประวัติการแจ้งเตือน</div>
       <table class="alert-table">
         <thead>
-          <tr><th>Time</th><th>Sensor</th><th>Value</th><th>Threshold</th><th>Severity</th><th>Status</th><th>Action</th></tr>
+          <tr><th>Time</th><th>Sensor</th><th>Value</th><th>Threshold</th><th>Severity</th><th>Status</th><th>Responder</th><th>Action</th></tr>
         </thead>
         <tbody id="alert-tbody"></tbody>
       </table>
@@ -417,7 +436,7 @@
 
     <div>
       <div class="panel" style="margin-bottom:16px;">
-        <div class="panel-title"><span class="icon">💬</span> LINE Alert Preview</div>
+        <div class="panel-title"><span class="icon">&#128172;</span> LINE Alert Preview</div>
         <div id="line-preview-area">
           <div style="text-align:center; padding:20px; color:var(--muted); font-size:12px;">
             กดปุ่ม Alarm เพื่อดูตัวอย่างข้อความ LINE
@@ -426,7 +445,7 @@
       </div>
 
       <div class="panel">
-        <div class="panel-title"><span class="icon">📋</span> Activity Log</div>
+        <div class="panel-title"><span class="icon">&#128203;</span> Activity Log</div>
         <div id="maint-log">
           <div style="text-align:center; padding:20px; color:var(--muted); font-size:12px;">
             ยังไม่มีกิจกรรม
@@ -439,123 +458,88 @@
 
 <!-- FOOTER -->
 <div class="footer">
-  CONSERTECH CO., LTD. — Utility Monitoring & Alert System<br>
+  CONSERTECH CO., LTD. — Utility Monitoring &amp; Alert System<br>
   CONSULT &bull; SERVICE &bull; TECHNOLOGY &nbsp;|&nbsp;
   <a href="https://www.cs-th.com" target="_blank">www.cs-th.com</a> &nbsp;|&nbsp; info@cs-th.com
 </div>
 
-<!-- SETTINGS MODAL -->
-<div class="settings-overlay" id="settings-overlay" onclick="if(event.target===this)closeSettings()">
-  <div class="settings-modal">
-    <div class="settings-header">
-      <h2>⚙️ Settings / ตั้งค่าระบบ</h2>
-      <button class="settings-close" onclick="closeSettings()">&times;</button>
+<!-- SETTINGS MODAL (thresholds only) -->
+<div class="modal-overlay" id="settings-overlay" onclick="if(event.target===this)closeSettings()">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>&#9881; Settings / ตั้งค่าเกณฑ์เซนเซอร์</h2>
+      <button class="modal-close" onclick="closeSettings()">&times;</button>
     </div>
-    <div class="settings-body">
+    <div class="modal-body">
       <div class="settings-section">
-        <h3>🔗 API Connection</h3>
-        <div class="settings-field">
-          <label>INGEST API KEY</label>
-          <input type="text" id="settings-api-key" placeholder="ใส่ API Key สำหรับเชื่อมต่อระบบจริง">
-        </div>
-        <div class="settings-field">
-          <label>LINE USER ID (สำหรับแจ้งเตือน)</label>
-          <input type="text" id="settings-line-uid" placeholder="Uxxxxxx">
-        </div>
-      </div>
-      <div class="settings-section">
-        <h3>📊 Sensor Thresholds / ค่าเกณฑ์แจ้งเตือน</h3>
+        <h3>&#128202; Sensor Thresholds / ค่าเกณฑ์แจ้งเตือน</h3>
         <p style="font-size:11px; color:var(--muted); margin-bottom:12px;">ปรับค่าเกณฑ์การแจ้งเตือนของแต่ละเซนเซอร์ (ใช้ในหน้า Dashboard)</p>
         <table class="threshold-table">
           <thead>
             <tr>
-              <th>Sensor</th>
-              <th>Unit</th>
-              <th>Warn Low</th>
-              <th>Warn High</th>
-              <th>Alarm Low</th>
-              <th>Alarm High</th>
-              <th>Nominal</th>
+              <th>Sensor</th><th>Unit</th><th>Warn Low</th><th>Warn High</th><th>Alarm Low</th><th>Alarm High</th><th>Nominal</th>
             </tr>
           </thead>
           <tbody id="threshold-tbody"></tbody>
         </table>
       </div>
     </div>
-    <div class="settings-footer">
+    <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeSettings()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveSettings()">💾 Save & Apply</button>
+      <button class="btn btn-primary" onclick="saveSettings()">&#128190; Save & Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- SENSOR DETAIL MODAL -->
+<div class="modal-overlay" id="detail-overlay" onclick="if(event.target===this)closeDetail()">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="detail-title">Sensor Detail</h2>
+      <button class="modal-close" onclick="closeDetail()">&times;</button>
+    </div>
+    <div class="modal-body" id="detail-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="exportSensorCSV()">&#128229; Export CSV</button>
+      <button class="btn btn-primary" onclick="closeDetail()">Close</button>
     </div>
   </div>
 </div>
 
 <script>
-// ══════════════════════════════════════════════
-//  CONFIG — ตั้งค่า API
-// ══════════════════════════════════════════════
+// ====================================================
+//  CONFIG
+// ====================================================
 const CONFIG = {
-  BASE_URL: '',  // empty = same origin (auto-detect)
-  API_KEY: '',
+  BASE_URL: '',
+  API_KEY: 'cst-sensor-2026-secret',
   LINE_USER_ID: 'U667a6f23628a051a262e599511abd1c3',
-  POLL_INTERVAL: 3000,  // ms
-  isLive: false,
+  POLL_INTERVAL: 3000,
+  isLive: true,
 };
 
-// ══════════════════════════════════════════════
-//  SENSOR DEFINITIONS — from Proposal Rev.01
-// ══════════════════════════════════════════════
+// ====================================================
+//  SENSOR DEFINITIONS
+// ====================================================
 const SENSORS = [
-  {
-    id: 'PT-01', name: 'Compressed Air Header', nameTH: 'แรงดันลมอัดหลัก',
-    type: 'pressure', unit: 'bar', min: 0, max: 10,
-    warnLow: 5.8, warnHigh: 8.5, alarmLow: 5.5, alarmHigh: 9.0,
-    nominal: 7.0,
-  },
-  {
-    id: 'PT-02', name: 'Chilled Water Pump Discharge', nameTH: 'แรงดันน้ำเย็น',
-    type: 'pressure', unit: 'bar', min: 0, max: 6,
-    warnLow: 2.2, warnHigh: 4.5, alarmLow: 2.0, alarmHigh: 5.0,
-    nominal: 3.3,
-  },
-  {
-    id: 'FT-01', name: 'Cooling Water Line', nameTH: 'อัตราการไหลน้ำหล่อเย็น',
-    type: 'flow', unit: 'm³/h', min: 0, max: 200,
-    warnLow: 100, warnHigh: 170, alarmLow: 85, alarmHigh: 185,
-    nominal: 135,
-  },
-  {
-    id: 'FT-02', name: 'Process Water Line', nameTH: 'อัตราการไหลน้ำกระบวนการ',
-    type: 'flow', unit: 'm³/h', min: 0, max: 120,
-    warnLow: 55, warnHigh: 100, alarmLow: 45, alarmHigh: 110,
-    nominal: 77,
-  },
-  {
-    id: 'TT-01', name: 'Chiller Outlet', nameTH: 'อุณหภูมิน้ำออกจากชิลเลอร์',
-    type: 'temperature', unit: '°C', min: -10, max: 50,
-    warnLow: 6, warnHigh: 12, alarmLow: 4, alarmHigh: 14,
-    nominal: 9,
-  },
-  {
-    id: 'TT-02', name: 'Mixer Cooling Return', nameTH: 'อุณหภูมิน้ำหล่อเย็นขากลับ',
-    type: 'temperature', unit: '°C', min: 0, max: 100,
-    warnLow: null, warnHigh: 36, alarmLow: null, alarmHigh: 40,
-    nominal: 28,
-  },
+  { id: 'PT-01', name: 'Compressed Air Header', nameTH: 'แรงดันลมอัดหลัก', type: 'pressure', unit: 'bar', min: 0, max: 10, warnLow: 5.8, warnHigh: 8.5, alarmLow: 5.5, alarmHigh: 9.0, nominal: 7.0 },
+  { id: 'PT-02', name: 'Chilled Water Pump Discharge', nameTH: 'แรงดันน้ำเย็น', type: 'pressure', unit: 'bar', min: 0, max: 6, warnLow: 2.2, warnHigh: 4.5, alarmLow: 2.0, alarmHigh: 5.0, nominal: 3.3 },
+  { id: 'FT-01', name: 'Cooling Water Line', nameTH: 'อัตราการไหลน้ำหล่อเย็น', type: 'flow', unit: 'm³/h', min: 0, max: 200, warnLow: 100, warnHigh: 170, alarmLow: 85, alarmHigh: 185, nominal: 135 },
+  { id: 'FT-02', name: 'Process Water Line', nameTH: 'อัตราการไหลน้ำกระบวนการ', type: 'flow', unit: 'm³/h', min: 0, max: 120, warnLow: 55, warnHigh: 100, alarmLow: 45, alarmHigh: 110, nominal: 77 },
+  { id: 'TT-01', name: 'Chiller Outlet', nameTH: 'อุณหภูมิน้ำออกจากชิลเลอร์', type: 'temperature', unit: '°C', min: -10, max: 50, warnLow: 6, warnHigh: 12, alarmLow: 4, alarmHigh: 14, nominal: 9 },
+  { id: 'TT-02', name: 'Mixer Cooling Return', nameTH: 'อุณหภูมิน้ำหล่อเย็นขากลับ', type: 'temperature', unit: '°C', min: 0, max: 100, warnLow: null, warnHigh: 36, alarmLow: null, alarmHigh: 40, nominal: 28 },
 ];
 
-// ══════════════════════════════════════════════
-//  SETTINGS (localStorage persistence)
-// ══════════════════════════════════════════════
+// ====================================================
+//  SETTINGS (localStorage persistence for thresholds)
+// ====================================================
 const SETTINGS_KEY = 'consertech_sensor_settings';
 
 function loadSettings() {
   try {
     const saved = localStorage.getItem(SETTINGS_KEY);
-    if (!saved) return false;
+    if (!saved) return;
     const s = JSON.parse(saved);
-    if (s.apiKey) CONFIG.API_KEY = s.apiKey;
-    if (s.lineUserId) CONFIG.LINE_USER_ID = s.lineUserId;
-    // Restore thresholds
     if (s.thresholds) {
       s.thresholds.forEach(t => {
         const sensor = SENSORS.find(x => x.id === t.id);
@@ -567,40 +551,31 @@ function loadSettings() {
         if (t.nominal !== undefined) sensor.nominal = t.nominal;
       });
     }
-    return !!s.apiKey;
-  } catch (e) { return false; }
+  } catch (e) { /* ignore */ }
 }
 
 function saveSettingsToStorage() {
   const s = {
-    apiKey: CONFIG.API_KEY,
-    lineUserId: CONFIG.LINE_USER_ID,
     thresholds: SENSORS.map(x => ({
-      id: x.id,
-      warnLow: x.warnLow, warnHigh: x.warnHigh,
-      alarmLow: x.alarmLow, alarmHigh: x.alarmHigh,
-      nominal: x.nominal,
+      id: x.id, warnLow: x.warnLow, warnHigh: x.warnHigh,
+      alarmLow: x.alarmLow, alarmHigh: x.alarmHigh, nominal: x.nominal,
     })),
   };
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
 }
 
 function openSettings() {
-  document.getElementById('settings-api-key').value = CONFIG.API_KEY || '';
-  document.getElementById('settings-line-uid').value = CONFIG.LINE_USER_ID || '';
-  // Populate threshold table
   const tbody = document.getElementById('threshold-tbody');
   tbody.innerHTML = SENSORS.map(s => {
-    const noLow = s.alarmLow === null && s.warnLow === null;
-    return `<tr>
-      <td>${s.id}<br><span style="font-weight:400;font-size:10px;color:var(--muted)">${s.nameTH}</span></td>
-      <td>${s.unit}</td>
-      <td><input type="number" step="0.1" data-id="${s.id}" data-field="warnLow" value="${s.warnLow ?? ''}" ${s.warnLow === null ? 'disabled placeholder="N/A"' : ''}></td>
-      <td><input type="number" step="0.1" data-id="${s.id}" data-field="warnHigh" value="${s.warnHigh ?? ''}"></td>
-      <td><input type="number" step="0.1" data-id="${s.id}" data-field="alarmLow" value="${s.alarmLow ?? ''}" ${s.alarmLow === null ? 'disabled placeholder="N/A"' : ''}></td>
-      <td><input type="number" step="0.1" data-id="${s.id}" data-field="alarmHigh" value="${s.alarmHigh ?? ''}"></td>
-      <td><input type="number" step="0.1" data-id="${s.id}" data-field="nominal" value="${s.nominal}"></td>
-    </tr>`;
+    return '<tr>' +
+      '<td>' + s.id + '<br><span style="font-weight:400;font-size:10px;color:var(--muted)">' + s.nameTH + '</span></td>' +
+      '<td>' + s.unit + '</td>' +
+      '<td><input type="number" step="0.1" data-id="' + s.id + '" data-field="warnLow" value="' + (s.warnLow ?? '') + '" ' + (s.warnLow === null ? 'disabled placeholder="N/A"' : '') + '></td>' +
+      '<td><input type="number" step="0.1" data-id="' + s.id + '" data-field="warnHigh" value="' + (s.warnHigh ?? '') + '"></td>' +
+      '<td><input type="number" step="0.1" data-id="' + s.id + '" data-field="alarmLow" value="' + (s.alarmLow ?? '') + '" ' + (s.alarmLow === null ? 'disabled placeholder="N/A"' : '') + '></td>' +
+      '<td><input type="number" step="0.1" data-id="' + s.id + '" data-field="alarmHigh" value="' + (s.alarmHigh ?? '') + '"></td>' +
+      '<td><input type="number" step="0.1" data-id="' + s.id + '" data-field="nominal" value="' + s.nominal + '"></td>' +
+      '</tr>';
   }).join('');
   document.getElementById('settings-overlay').classList.add('active');
 }
@@ -610,12 +585,6 @@ function closeSettings() {
 }
 
 function saveSettings() {
-  const apiKey = document.getElementById('settings-api-key').value.trim();
-  const lineUid = document.getElementById('settings-line-uid').value.trim();
-  CONFIG.API_KEY = apiKey;
-  if (lineUid) CONFIG.LINE_USER_ID = lineUid;
-
-  // Read threshold values
   document.querySelectorAll('#threshold-tbody input[type=number]').forEach(inp => {
     if (inp.disabled) return;
     const sensor = SENSORS.find(s => s.id === inp.dataset.id);
@@ -623,49 +592,22 @@ function saveSettings() {
     const val = parseFloat(inp.value);
     if (!isNaN(val)) sensor[inp.dataset.field] = val;
   });
-
   saveSettingsToStorage();
-
-  // Reconnect or disconnect based on API key
-  if (apiKey) {
-    CONFIG.isLive = true;
-    updateConnectionUI();
-    updateAutoStatus();
-    showToast('✅ Settings saved — Live Mode', 'success');
-    fetchDashboardData();
-  } else {
-    CONFIG.isLive = false;
-    updateConnectionUI();
-    updateAutoStatus();
-    showToast('Settings saved — Demo Mode', 'info');
-  }
-
-  // Rebuild cards to apply new thresholds
   buildSensorCards();
   closeSettings();
+  showToast('Settings saved', 'success');
 }
 
-function updateAutoStatus() {
-  const bar = document.getElementById('auto-status');
-  const text = document.getElementById('auto-status-text');
-  if (CONFIG.isLive) {
-    bar.classList.add('connected');
-    text.textContent = '🟢 Connected — Live Mode (ส่งค่าจริง + แจ้ง LINE)';
-  } else {
-    bar.classList.remove('connected');
-    text.textContent = '🔌 Demo Mode — กด ⚙️ เพื่อตั้งค่า API Key และเชื่อมต่อระบบจริง';
-  }
-}
-
-// ══════════════════════════════════════════════
+// ====================================================
 //  STATE
-// ══════════════════════════════════════════════
+// ====================================================
 const sensorData = {};
 const sensorHistories = {};
 const charts = {};
 const alerts = [];
 let resolvedCount = 0;
-let pollTimer = null;
+let currentDetailSensorId = null;
+let detailAlerts = [];
 
 SENSORS.forEach(s => {
   sensorData[s.id] = { value: s.nominal, status: 'normal', alarm: false };
@@ -674,89 +616,49 @@ SENSORS.forEach(s => {
   );
 });
 
-// ══════════════════════════════════════════════
-//  API CONNECTION
-// ══════════════════════════════════════════════
-function connectAPI() {
-  if (!CONFIG.API_KEY) { showToast('กรุณาตั้ง API Key ใน Settings ก่อน', 'error'); openSettings(); return; }
-  CONFIG.isLive = true;
-  saveSettingsToStorage();
-  updateConnectionUI();
-  updateAutoStatus();
-  showToast('เชื่อมต่อ API สำเร็จ — Live Mode', 'success');
-  addMaintLog('🔗 Connected to live API — ส่งค่าจริงผ่าน LINE', 'var(--success)');
-  fetchDashboardData();
-  fetchAlertHistory();
-}
-
-function disconnectAPI() {
-  CONFIG.isLive = false;
-  updateConnectionUI();
-  updateAutoStatus();
-  showToast('Demo Mode — ไม่ส่ง API จริง', 'info');
-  addMaintLog('🔌 Switched to Demo Mode', 'var(--muted)');
-}
-
-function updateConnectionUI() {
-  const dot = document.getElementById('conn-dot');
-  const text = document.getElementById('conn-text');
-  if (CONFIG.isLive) {
-    dot.className = 'conn-dot live';
-    text.textContent = 'LIVE';
-  } else {
-    dot.className = 'conn-dot demo';
-    text.textContent = 'DEMO';
-  }
-}
-
-// ══════════════════════════════════════════════
+// ====================================================
 //  API CALLS
-// ══════════════════════════════════════════════
+// ====================================================
 async function apiPost(endpoint, body) {
   const url = (CONFIG.BASE_URL || '') + endpoint;
   const headers = { 'Content-Type': 'application/json' };
   if (CONFIG.API_KEY) headers['x-api-key'] = CONFIG.API_KEY;
   const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  if (!res.ok) throw new Error(data.error || 'HTTP ' + res.status);
   return data;
 }
 
 async function apiGet(endpoint) {
   const url = (CONFIG.BASE_URL || '') + endpoint;
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
 }
 
 async function sendSensorValue(sensorId, value) {
-  if (!CONFIG.isLive) return null;
   try {
-    const result = await apiPost('/api/sensor-ingest', { sensor_id: sensorId, value });
-    return result;
+    return await apiPost('/api/sensor-ingest', { sensor_id: sensorId, value });
   } catch (err) {
-    showToast(`API Error: ${err.message}`, 'error');
+    showToast('API Error: ' + err.message, 'error');
     return null;
   }
 }
 
 async function sendAlertAction(action, alertId) {
-  if (!CONFIG.isLive) return null;
   try {
-    const result = await apiPost('/api/alert-action', {
+    return await apiPost('/api/alert-action', {
       action,
       alert_id: alertId,
       line_user_id: CONFIG.LINE_USER_ID,
     });
-    return result;
   } catch (err) {
-    showToast(`API Error: ${err.message}`, 'error');
+    showToast('API Error: ' + err.message, 'error');
     return null;
   }
 }
 
 async function fetchDashboardData() {
-  if (!CONFIG.isLive) return;
   try {
     const [latestRes, alertsRes, summaryRes] = await Promise.all([
       apiGet('/api/dashboard-data?type=latest'),
@@ -764,10 +666,9 @@ async function fetchDashboardData() {
       apiGet('/api/dashboard-data?type=summary'),
     ]);
 
-    // Update sensor values from API
     if (latestRes.readings) {
       latestRes.readings.forEach(r => {
-        const s = SENSORS.find(s => s.id === r.sensor_id);
+        const s = SENSORS.find(x => x.id === r.sensor_id);
         if (!s) return;
         const d = sensorData[s.id];
         d.value = r.value;
@@ -783,12 +684,10 @@ async function fetchDashboardData() {
       });
     }
 
-    // Merge open/ack alerts from API
     if (alertsRes.alerts && alertsRes.alerts.length > 0) {
       alertsRes.alerts.forEach(apiAlert => {
         const exists = alerts.find(a => a.apiId === apiAlert.id);
         if (exists) {
-          // Update status if changed
           const newStatus = apiAlert.status === 'acknowledged' ? 'acknowledged' : 'open';
           if (exists.status !== newStatus && exists.status !== 'resolved') exists.status = newStatus;
         } else {
@@ -799,7 +698,7 @@ async function fetchDashboardData() {
             sensorId: apiAlert.sensor_id,
             sensorName: apiAlert.sensor_name || apiAlert.sensor_id,
             value: apiAlert.trigger_value,
-            unit: SENSORS.find(s => s.id === apiAlert.sensor_id)?.unit || '',
+            unit: SENSORS.find(x => x.id === apiAlert.sensor_id)?.unit || '',
             threshold: apiAlert.threshold_value,
             direction: apiAlert.direction || 'HIGH',
             severity: apiAlert.severity?.toLowerCase() || 'warning',
@@ -810,7 +709,6 @@ async function fetchDashboardData() {
       });
     }
 
-    // Update stats from API summary
     if (summaryRes) {
       document.getElementById('stat-alerts').textContent = summaryRes.open_alerts || 0;
       document.getElementById('stat-resolved').textContent = summaryRes.resolved_today || 0;
@@ -826,7 +724,6 @@ async function fetchDashboardData() {
 }
 
 async function fetchAlertHistory() {
-  if (!CONFIG.isLive) return;
   try {
     const histRes = await apiGet('/api/dashboard-data?type=alert-history');
     if (histRes.alerts && histRes.alerts.length > 0) {
@@ -840,17 +737,17 @@ async function fetchAlertHistory() {
           sensorId: apiAlert.sensor_id,
           sensorName: apiAlert.sensors?.name || apiAlert.sensor_id,
           value: apiAlert.trigger_value,
-          unit: apiAlert.sensors?.unit || SENSORS.find(s => s.id === apiAlert.sensor_id)?.unit || '',
+          unit: apiAlert.sensors?.unit || SENSORS.find(x => x.id === apiAlert.sensor_id)?.unit || '',
           threshold: apiAlert.threshold_value,
           direction: apiAlert.direction || 'HIGH',
           severity: apiAlert.severity?.toLowerCase() || 'warning',
           status: apiAlert.status,
-          responder: null,
+          responder: apiAlert.acknowledged_by_name || null,
           ackTime: apiAlert.acknowledged_at ? new Date(apiAlert.acknowledged_at) : null,
           resolveTime: apiAlert.resolved_at ? new Date(apiAlert.resolved_at) : null,
+          resolvedBy: apiAlert.resolved_by_name || null,
         });
       });
-      // Sort by time descending
       alerts.sort((a, b) => b.time - a.time);
       renderAlerts();
     }
@@ -859,9 +756,9 @@ async function fetchAlertHistory() {
   }
 }
 
-// ══════════════════════════════════════════════
-//  BUILD SENSOR CARDS (ONCE)
-// ══════════════════════════════════════════════
+// ====================================================
+//  BUILD SENSOR CARDS
+// ====================================================
 function buildSensorCards() {
   const grid = document.getElementById('sensor-grid');
   const typeIcons = { pressure: '🔵', flow: '🟢', temperature: '🔴' };
@@ -870,47 +767,44 @@ function buildSensorCards() {
   grid.innerHTML = SENSORS.map(s => {
     const icon = typeIcons[s.type];
     const barClass = barClasses[s.type];
-    const warnLabel = s.warnLow !== null
-      ? `W: ${s.warnLow}/${s.warnHigh}`
-      : `W: >${s.warnHigh}`;
-    const alarmLabel = s.alarmLow !== null
-      ? `A: ${s.alarmLow}/${s.alarmHigh}`
-      : `A: >${s.alarmHigh}`;
+    const warnLabel = s.warnLow !== null ? 'W: ' + s.warnLow + '/' + s.warnHigh : 'W: >' + s.warnHigh;
+    const alarmLabel = s.alarmLow !== null ? 'A: ' + s.alarmLow + '/' + s.alarmHigh : 'A: >' + s.alarmHigh;
 
-    return `<div class="sensor-card" id="card-${s.id}">
-      <div class="sensor-type-bar ${barClass}"></div>
-      <div class="sensor-header">
-        <div>
-          <div class="sensor-tag">${icon} ${s.id}</div>
-        </div>
-        <span class="sensor-status status-normal" id="status-badge-${s.id}">NORMAL</span>
-      </div>
-      <div class="sensor-name">${s.name}</div>
-      <div class="sensor-name-th">${s.nameTH}</div>
-      <div class="sensor-value" id="value-${s.id}">${s.nominal.toFixed(1)}<span class="sensor-unit"> ${s.unit}</span></div>
-      <div class="sensor-range">
-        Range: <span>${s.min}–${s.max} ${s.unit}</span><br>
-        <span style="color:var(--warning)">${warnLabel}</span> &nbsp;
-        <span style="color:var(--danger)">${alarmLabel}</span>
-      </div>
-      <div class="gauge-bar-container">
-        <div class="gauge-bar-bg">
-          <div class="gauge-bar-fill" id="gauge-${s.id}" style="width:50%; background:var(--accent);"></div>
-          ${s.alarmHigh ? `<div class="threshold-line hi" style="left:${((s.alarmHigh - s.min) / (s.max - s.min)) * 100}%;"></div>` : ''}
-          ${s.alarmLow !== null ? `<div class="threshold-line lo" style="left:${((s.alarmLow - s.min) / (s.max - s.min)) * 100}%;"></div>` : ''}
-          ${s.warnHigh ? `<div class="threshold-line warn" style="left:${((s.warnHigh - s.min) / (s.max - s.min)) * 100}%;"></div>` : ''}
-          ${s.warnLow !== null ? `<div class="threshold-line warn" style="left:${((s.warnLow - s.min) / (s.max - s.min)) * 100}%;"></div>` : ''}
-        </div>
-        <div class="gauge-bar-markers"><span>${s.min}</span><span>${s.max} ${s.unit}</span></div>
-      </div>
-      <div class="mini-chart-wrap"><canvas class="mini-chart" id="chart-${s.id}"></canvas></div>
-    </div>`;
+    return '<div class="sensor-card" id="card-' + s.id + '" onclick="openSensorDetail(\'' + s.id + '\')">' +
+      '<div class="sensor-type-bar ' + barClass + '"></div>' +
+      '<div class="sensor-header">' +
+        '<div><div class="sensor-tag">' + icon + ' ' + s.id + '</div></div>' +
+        '<span class="sensor-status status-normal" id="status-badge-' + s.id + '">NORMAL</span>' +
+      '</div>' +
+      '<div class="sensor-name">' + s.name + '</div>' +
+      '<div class="sensor-name-th">' + s.nameTH + '</div>' +
+      '<div class="sensor-value" id="value-' + s.id + '">' + s.nominal.toFixed(1) + '<span class="sensor-unit"> ' + s.unit + '</span></div>' +
+      '<div class="sensor-range">' +
+        'Range: <span>' + s.min + '–' + s.max + ' ' + s.unit + '</span><br>' +
+        '<span style="color:var(--warning)">' + warnLabel + '</span> &nbsp;' +
+        '<span style="color:var(--danger)">' + alarmLabel + '</span>' +
+      '</div>' +
+      '<div class="gauge-bar-container">' +
+        '<div class="gauge-bar-bg">' +
+          '<div class="gauge-bar-fill" id="gauge-' + s.id + '" style="width:50%; background:var(--accent);"></div>' +
+          (s.alarmHigh ? '<div class="threshold-line hi" style="left:' + (((s.alarmHigh - s.min) / (s.max - s.min)) * 100) + '%;"></div>' : '') +
+          (s.alarmLow !== null ? '<div class="threshold-line lo" style="left:' + (((s.alarmLow - s.min) / (s.max - s.min)) * 100) + '%;"></div>' : '') +
+          (s.warnHigh ? '<div class="threshold-line warn" style="left:' + (((s.warnHigh - s.min) / (s.max - s.min)) * 100) + '%;"></div>' : '') +
+          (s.warnLow !== null ? '<div class="threshold-line warn" style="left:' + (((s.warnLow - s.min) / (s.max - s.min)) * 100) + '%;"></div>' : '') +
+        '</div>' +
+        '<div class="gauge-bar-markers"><span>' + s.min + '</span><span>' + s.max + ' ' + s.unit + '</span></div>' +
+      '</div>' +
+      '<div class="mini-chart-wrap"><canvas class="mini-chart" id="chart-' + s.id + '"></canvas></div>' +
+    '</div>';
   }).join('');
 
-  // Create Chart.js instances ONCE
+  // Destroy old charts
+  Object.values(charts).forEach(c => c.destroy());
+  Object.keys(charts).forEach(k => delete charts[k]);
+
   const typeColors = { pressure: '#1565C0', flow: '#00838F', temperature: '#C62828' };
   SENSORS.forEach(s => {
-    const ctx = document.getElementById(`chart-${s.id}`);
+    const ctx = document.getElementById('chart-' + s.id);
     if (!ctx) return;
     const color = typeColors[s.type];
     charts[s.id] = new Chart(ctx, {
@@ -927,26 +821,23 @@ function buildSensorCards() {
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: { legend: { display: false } },
-        scales: {
-          x: { display: false },
-          y: { display: false, min: s.min, max: s.max }
-        },
+        scales: { x: { display: false }, y: { display: false, min: s.min, max: s.max } },
         animation: false,
       }
     });
   });
 }
 
-// ══════════════════════════════════════════════
-//  UPDATE DISPLAY (no DOM rebuild)
-// ══════════════════════════════════════════════
+// ====================================================
+//  UPDATE DISPLAY
+// ====================================================
 function updateSensorDisplay() {
   SENSORS.forEach(s => {
     const d = sensorData[s.id];
-    const card = document.getElementById(`card-${s.id}`);
-    const valEl = document.getElementById(`value-${s.id}`);
-    const badge = document.getElementById(`status-badge-${s.id}`);
-    const gauge = document.getElementById(`gauge-${s.id}`);
+    const card = document.getElementById('card-' + s.id);
+    const valEl = document.getElementById('value-' + s.id);
+    const badge = document.getElementById('status-badge-' + s.id);
+    const gauge = document.getElementById('gauge-' + s.id);
     if (!card || !valEl || !badge || !gauge) return;
 
     card.classList.remove('alarm', 'warning-state');
@@ -955,7 +846,7 @@ function updateSensorDisplay() {
 
     const valColor = d.status === 'alarm' ? 'var(--danger)' : d.status === 'warning' ? 'var(--warning)' : 'var(--dark)';
     valEl.style.color = valColor;
-    valEl.innerHTML = `${d.value.toFixed(1)}<span class="sensor-unit"> ${s.unit}</span>`;
+    valEl.innerHTML = d.value.toFixed(1) + '<span class="sensor-unit"> ' + s.unit + '</span>';
 
     if (d.status === 'alarm') {
       badge.className = 'sensor-status status-alarm'; badge.textContent = 'ALARM';
@@ -983,9 +874,9 @@ function updateSensorDisplay() {
   });
 }
 
-// ══════════════════════════════════════════════
+// ====================================================
 //  SIMULATE NORMAL FLUCTUATION
-// ══════════════════════════════════════════════
+// ====================================================
 function updateSensors() {
   SENSORS.forEach(s => {
     const d = sensorData[s.id];
@@ -1003,19 +894,18 @@ function updateSensors() {
   updateStats();
 }
 
-// ══════════════════════════════════════════════
+// ====================================================
 //  TRIGGER ALARM
-// ══════════════════════════════════════════════
+// ====================================================
 async function triggerAlarm(type) {
   const candidates = SENSORS.filter(s => s.type === type && !sensorData[s.id].alarm);
   if (candidates.length === 0) {
-    showToast(`ไม่มี ${type} sensor ที่พร้อม — ลอง Reset ก่อน`, 'info');
+    showToast('ไม่มี ' + type + ' sensor ที่พร้อม — ลอง Reset ก่อน', 'info');
     return;
   }
   const s = candidates[0];
   const d = sensorData[s.id];
 
-  // Generate alarm value
   const isHigh = type === 'temperature' || Math.random() > 0.3;
   if (isHigh) {
     d.value = s.alarmHigh + Math.random() * (s.max - s.alarmHigh) * 0.5;
@@ -1028,33 +918,24 @@ async function triggerAlarm(type) {
   d.status = type === 'temperature' && candidates[0] === SENSORS[4] ? 'warning' : 'alarm';
   d.alarm = true;
 
-  // Send to API if live
-  if (CONFIG.isLive) {
-    showToast(`📡 Sending ${s.id} = ${d.value.toFixed(1)} ${s.unit} to API...`, 'info');
-    const result = await sendSensorValue(s.id, parseFloat(d.value.toFixed(1)));
-    if (result) {
-      showToast(`✅ API: ${s.id} — ${result.anomaly ? 'ALARM triggered! LINE จะแจ้งเตือน' : 'Value stored'}`, result.anomaly ? 'error' : 'success');
-      if (result.alert_id) {
-        // Store real alert_id for acknowledge/resolve
-        const alert = {
-          id: Date.now(),
-          apiId: result.alert_id,
-          time: new Date(),
-          sensorId: s.id, sensorName: s.name,
-          value: d.value, unit: s.unit,
-          threshold: isHigh ? s.alarmHigh : (s.alarmLow || s.warnHigh),
-          direction: isHigh ? 'HIGH' : 'LOW',
-          severity: d.status === 'alarm' ? 'critical' : 'warning',
-          status: 'open', responder: null,
-        };
-        alerts.unshift(alert);
-        renderAlerts();
-        renderLinePreview(alert, s);
-        addMaintLog(`🚨 ALARM: ${s.id} — ${d.value.toFixed(1)} ${s.unit} (${alert.direction}) → LINE sent`, 'var(--danger)');
-      }
-    } else {
-      // API failed, still show locally
-      addLocalAlert(s, d, isHigh);
+  showToast('Sending ' + s.id + ' = ' + d.value.toFixed(1) + ' ' + s.unit + ' to API...', 'info');
+  const result = await sendSensorValue(s.id, parseFloat(d.value.toFixed(1)));
+  if (result) {
+    showToast('API: ' + s.id + ' — ' + (result.anomaly ? 'ALARM triggered! LINE notified' : 'Value stored'), result.anomaly ? 'error' : 'success');
+    if (result.alert_id) {
+      const alert = {
+        id: Date.now(), apiId: result.alert_id, time: new Date(),
+        sensorId: s.id, sensorName: s.name,
+        value: d.value, unit: s.unit,
+        threshold: isHigh ? s.alarmHigh : (s.alarmLow || s.warnHigh),
+        direction: isHigh ? 'HIGH' : 'LOW',
+        severity: d.status === 'alarm' ? 'critical' : 'warning',
+        status: 'open', responder: null,
+      };
+      alerts.unshift(alert);
+      renderAlerts();
+      renderLinePreview(alert, s);
+      addMaintLog('ALARM: ' + s.id + ' — ' + d.value.toFixed(1) + ' ' + s.unit + ' (' + alert.direction + ') LINE sent', 'var(--danger)');
     }
   } else {
     addLocalAlert(s, d, isHigh);
@@ -1066,9 +947,7 @@ async function triggerAlarm(type) {
 
 function addLocalAlert(s, d, isHigh) {
   const alert = {
-    id: Date.now(),
-    apiId: null,
-    time: new Date(),
+    id: Date.now(), apiId: null, time: new Date(),
     sensorId: s.id, sensorName: s.name,
     value: d.value, unit: s.unit,
     threshold: isHigh ? s.alarmHigh : (s.alarmLow || s.warnHigh),
@@ -1079,41 +958,34 @@ function addLocalAlert(s, d, isHigh) {
   alerts.unshift(alert);
   renderAlerts();
   renderLinePreview(alert, s);
-  addMaintLog(`🚨 ${d.status.toUpperCase()}: ${s.id} — ${d.value.toFixed(1)} ${s.unit} (Demo Mode)`, 'var(--danger)');
+  addMaintLog(d.status.toUpperCase() + ': ' + s.id + ' — ' + d.value.toFixed(1) + ' ' + s.unit, 'var(--danger)');
 }
 
-// ══════════════════════════════════════════════
+// ====================================================
 //  SEND NORMAL VALUES
-// ══════════════════════════════════════════════
+// ====================================================
 async function sendNormalValues() {
-  if (!CONFIG.isLive) {
-    showToast('Demo Mode — ไม่ส่ง API (กด Connect ก่อน)', 'info');
-    return;
-  }
-  showToast('📡 Sending normal values for all 6 sensors...', 'info');
+  showToast('Sending normal values for all 6 sensors...', 'info');
   for (const s of SENSORS) {
-    const value = parseFloat(s.nominal.toFixed(1));
-    await sendSensorValue(s.id, value);
+    await sendSensorValue(s.id, parseFloat(s.nominal.toFixed(1)));
   }
-  showToast('✅ Sent normal values — all 6 sensors recorded', 'success');
-  addMaintLog('📊 Sent normal values for all 6 sensors to API', 'var(--primary)');
+  showToast('Sent normal values — all 6 sensors recorded', 'success');
+  addMaintLog('Sent normal values for all 6 sensors to API', 'var(--primary)');
 }
 
-// ══════════════════════════════════════════════
+// ====================================================
 //  ACKNOWLEDGE / RESOLVE
-// ══════════════════════════════════════════════
+// ====================================================
 const responders = ['Somchai K.', 'Wichai P.', 'Nattapong S.', 'Kittisak M.'];
 
 async function acknowledgeLatest() {
   const open = alerts.find(a => a.status === 'open');
   if (!open) { showToast('ไม่มี alert ที่ต้อง acknowledge', 'info'); return; }
 
-  if (CONFIG.isLive && open.apiId) {
-    showToast('📡 Sending acknowledge to API...', 'info');
+  if (open.apiId) {
+    showToast('Sending acknowledge to API...', 'info');
     const result = await sendAlertAction('acknowledge', open.apiId);
-    if (result) {
-      showToast('✅ Acknowledged — LINE จะแจ้งทีม', 'success');
-    }
+    if (result) showToast('Acknowledged — LINE notified', 'success');
   }
 
   open.status = 'acknowledged';
@@ -1121,7 +993,7 @@ async function acknowledgeLatest() {
   open.ackTime = new Date();
   renderAlerts();
   renderLineAck(open);
-  addMaintLog(`👷 ${open.responder} acknowledged ${open.sensorId}`, 'var(--primary)');
+  addMaintLog(open.responder + ' acknowledged ' + open.sensorId, 'var(--primary)');
   updateStats();
 }
 
@@ -1129,12 +1001,10 @@ async function resolveLatest() {
   const ack = alerts.find(a => a.status === 'acknowledged');
   if (!ack) { showToast('ไม่มี alert ที่ acknowledged — กด Acknowledge ก่อน', 'info'); return; }
 
-  if (CONFIG.isLive && ack.apiId) {
-    showToast('📡 Sending resolve to API...', 'info');
+  if (ack.apiId) {
+    showToast('Sending resolve to API...', 'info');
     const result = await sendAlertAction('resolve', ack.apiId);
-    if (result) {
-      showToast('✅ Resolved — LINE จะแจ้งว่าแก้ไขแล้ว', 'success');
-    }
+    if (result) showToast('Resolved — LINE notified', 'success');
   }
 
   ack.status = 'resolved';
@@ -1145,182 +1015,296 @@ async function resolveLatest() {
     d.value = sensor.nominal;
     d.status = 'normal';
     d.alarm = false;
-    // Send normal value back
-    if (CONFIG.isLive) sendSensorValue(sensor.id, sensor.nominal);
+    sendSensorValue(sensor.id, sensor.nominal);
   }
   resolvedCount++;
   renderAlerts();
   renderLineResolved(ack);
   const mins = ack.ackTime ? Math.round((ack.resolveTime - ack.ackTime) / 60000) || 1 : 1;
-  addMaintLog(`✅ ${ack.responder} resolved ${ack.sensorId} — ${mins} min`, 'var(--success)');
+  addMaintLog(ack.responder + ' resolved ' + ack.sensorId + ' — ' + mins + ' min', 'var(--success)');
   updateSensorDisplay();
   updateStats();
 }
 
-// ══════════════════════════════════════════════
+// ====================================================
 //  RESET
-// ══════════════════════════════════════════════
+// ====================================================
 async function resetAll() {
-  // Resolve all open alerts in API
-  if (CONFIG.isLive) {
-    try {
-      showToast('📡 Resolving all open alerts...', 'info');
-      await apiGet('/api/dashboard-data?type=resolve-all');
-      showToast('✅ All alerts resolved in API', 'success');
-    } catch (err) {
-      console.error('Reset API error:', err);
-    }
+  try {
+    showToast('Resolving all open alerts...', 'info');
+    await apiGet('/api/dashboard-data?type=resolve-all');
+    showToast('All alerts resolved in API', 'success');
+  } catch (err) {
+    console.error('Reset API error:', err);
   }
-  SENSORS.forEach(s => { sensorData[s.id] = { value: s.nominal, status: 'normal', alarm: false }; });
+
+  // Reset ALL local sensor state
+  SENSORS.forEach(s => {
+    sensorData[s.id] = { value: s.nominal, status: 'normal', alarm: false };
+  });
   alerts.length = 0;
   resolvedCount = 0;
+
   document.getElementById('alert-tbody').innerHTML = '';
   document.getElementById('no-alerts').style.display = 'block';
   document.getElementById('line-preview-area').innerHTML = '<div style="text-align:center; padding:20px; color:var(--muted); font-size:12px;">กดปุ่ม Alarm เพื่อดูตัวอย่างข้อความ LINE</div>';
   document.getElementById('maint-log').innerHTML = '<div style="text-align:center; padding:20px; color:var(--muted); font-size:12px;">ยังไม่มีกิจกรรม</div>';
+
+  // Update display AFTER state change
   updateSensorDisplay();
   updateStats();
-  addMaintLog('🔄 System reset — all alerts cleared', 'var(--muted)');
+  addMaintLog('System reset — all alerts cleared', 'var(--muted)');
 }
 
-// ══════════════════════════════════════════════
+// ====================================================
+//  CLEAR TEST DATA
+// ====================================================
+async function clearTestData() {
+  try {
+    showToast('Clearing test data...', 'info');
+    await apiGet('/api/dashboard-data?type=clear-test-data');
+    showToast('Test data cleared', 'success');
+    addMaintLog('Test data cleared from database', 'var(--muted)');
+    await resetAll();
+  } catch (err) {
+    showToast('Error clearing test data: ' + err.message, 'error');
+  }
+}
+
+// ====================================================
 //  RENDER ALERTS TABLE
-// ══════════════════════════════════════════════
+// ====================================================
 function renderAlerts() {
   const tbody = document.getElementById('alert-tbody');
   const noAlerts = document.getElementById('no-alerts');
   if (alerts.length === 0) { noAlerts.style.display = 'block'; tbody.innerHTML = ''; return; }
   noAlerts.style.display = 'none';
-  tbody.innerHTML = alerts.slice(0, 10).map(a => {
+  tbody.innerHTML = alerts.slice(0, 15).map(a => {
     const sevClass = a.severity === 'critical' ? 'sev-critical' : 'sev-warning';
     const stClass = a.status === 'open' ? 'st-open' : a.status === 'acknowledged' ? 'st-ack' : 'st-resolved';
     const stText = a.status === 'open' ? 'OPEN' : a.status === 'acknowledged' ? 'IN PROGRESS' : 'RESOLVED';
     const actionBtn = a.status === 'open'
-      ? `<button class="btn btn-primary btn-sm" onclick="acknowledgeAlert('${a.id}')">ACK</button>`
+      ? '<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();acknowledgeAlert(\'' + a.id + '\')">ACK</button>'
       : a.status === 'acknowledged'
-        ? `<button class="btn btn-success btn-sm" onclick="resolveAlert('${a.id}')">RESOLVE</button>`
-        : `<span style="color:var(--success); font-size:11px;">Done</span>`;
-    return `<tr>
-      <td>${formatTime(a.time)}</td>
-      <td><strong>${a.sensorId}</strong></td>
-      <td style="font-weight:700; color:var(--danger)">${a.value.toFixed(1)} ${a.unit}</td>
-      <td>${a.direction} ${a.threshold} ${a.unit}</td>
-      <td><span class="severity-badge ${sevClass}">${a.severity}</span></td>
-      <td><span class="status-badge ${stClass}">${stText}</span></td>
-      <td>${actionBtn}</td>
-    </tr>`;
+        ? '<button class="btn btn-success btn-sm" onclick="event.stopPropagation();resolveAlert(\'' + a.id + '\')">RESOLVE</button>'
+        : '<span style="color:var(--success); font-size:11px;">Done</span>';
+    const responderText = a.responder || a.resolvedBy || '—';
+    return '<tr>' +
+      '<td>' + formatTime(a.time) + '</td>' +
+      '<td><strong>' + a.sensorId + '</strong></td>' +
+      '<td style="font-weight:700; color:var(--danger)">' + a.value.toFixed(1) + ' ' + a.unit + '</td>' +
+      '<td>' + a.direction + ' ' + a.threshold + ' ' + a.unit + '</td>' +
+      '<td><span class="severity-badge ' + sevClass + '">' + a.severity + '</span></td>' +
+      '<td><span class="status-badge ' + stClass + '">' + stText + '</span></td>' +
+      '<td>' + responderText + '</td>' +
+      '<td>' + actionBtn + '</td>' +
+      '</tr>';
   }).join('');
 }
 
 async function acknowledgeAlert(id) {
   const alert = alerts.find(a => String(a.id) === String(id));
   if (!alert || alert.status !== 'open') return;
-  if (CONFIG.isLive && alert.apiId) {
+  if (alert.apiId) {
     const result = await sendAlertAction('acknowledge', alert.apiId);
-    if (result) showToast('✅ Acknowledged via API', 'success');
+    if (result) showToast('Acknowledged via API', 'success');
   }
   alert.status = 'acknowledged';
   alert.responder = responders[Math.floor(Math.random() * responders.length)];
   alert.ackTime = new Date();
   renderAlerts();
   renderLineAck(alert);
-  addMaintLog(`👷 ${alert.responder} acknowledged ${alert.sensorId}`, 'var(--primary)');
+  addMaintLog(alert.responder + ' acknowledged ' + alert.sensorId, 'var(--primary)');
   updateStats();
 }
 
 async function resolveAlert(id) {
   const alert = alerts.find(a => String(a.id) === String(id));
   if (!alert || alert.status !== 'acknowledged') return;
-  if (CONFIG.isLive && alert.apiId) {
+  if (alert.apiId) {
     const result = await sendAlertAction('resolve', alert.apiId);
-    if (result) showToast('✅ Resolved via API', 'success');
+    if (result) showToast('Resolved via API', 'success');
   }
   alert.status = 'resolved';
   alert.resolveTime = new Date();
   const sensor = SENSORS.find(s => s.id === alert.sensorId);
   if (sensor) {
     sensorData[sensor.id] = { value: sensor.nominal, status: 'normal', alarm: false };
-    if (CONFIG.isLive) sendSensorValue(sensor.id, sensor.nominal);
+    sendSensorValue(sensor.id, sensor.nominal);
   }
   resolvedCount++;
   renderAlerts();
   renderLineResolved(alert);
-  addMaintLog(`✅ ${alert.responder} resolved ${alert.sensorId}`, 'var(--success)');
+  addMaintLog(alert.responder + ' resolved ' + alert.sensorId, 'var(--success)');
   updateSensorDisplay();
   updateStats();
 }
 
-// ══════════════════════════════════════════════
+// ====================================================
+//  SENSOR DETAIL MODAL
+// ====================================================
+async function openSensorDetail(sensorId) {
+  currentDetailSensorId = sensorId;
+  const s = SENSORS.find(x => x.id === sensorId);
+  if (!s) return;
+  const d = sensorData[sensorId];
+
+  document.getElementById('detail-title').textContent = s.id + ' — ' + s.name;
+
+  let html = '<div class="detail-grid">' +
+    '<div class="detail-item"><div class="dlabel">Sensor ID</div><div class="dvalue">' + s.id + '</div></div>' +
+    '<div class="detail-item"><div class="dlabel">ชื่อ / Name</div><div class="dvalue" style="font-size:14px;">' + s.nameTH + '</div></div>' +
+    '<div class="detail-item"><div class="dlabel">ค่าปัจจุบัน / Current</div><div class="dvalue" style="color:' + (d.status === 'alarm' ? 'var(--danger)' : d.status === 'warning' ? 'var(--warning)' : 'var(--dark)') + '">' + d.value.toFixed(1) + ' ' + s.unit + '</div></div>' +
+    '<div class="detail-item"><div class="dlabel">Status</div><div class="dvalue" style="font-size:14px;">' + d.status.toUpperCase() + '</div></div>' +
+    '<div class="detail-item"><div class="dlabel">Warn Thresholds</div><div class="dvalue" style="font-size:14px; color:var(--warning)">' + (s.warnLow !== null ? s.warnLow + ' / ' : '— / ') + s.warnHigh + ' ' + s.unit + '</div></div>' +
+    '<div class="detail-item"><div class="dlabel">Alarm Thresholds</div><div class="dvalue" style="font-size:14px; color:var(--danger)">' + (s.alarmLow !== null ? s.alarmLow + ' / ' : '— / ') + s.alarmHigh + ' ' + s.unit + '</div></div>' +
+  '</div>';
+
+  html += '<h3 style="font-size:14px; font-weight:700; margin-bottom:12px;">Alert History / ประวัติแจ้งเตือน</h3>';
+  html += '<div id="detail-alerts-loading" style="text-align:center; padding:20px; color:var(--muted);">Loading...</div>';
+  html += '<table class="alert-table" id="detail-alerts-table" style="display:none;">' +
+    '<thead><tr><th>Time</th><th>Value</th><th>Severity</th><th>Status</th><th>Acknowledged By</th><th>Resolved By</th><th>Duration</th></tr></thead>' +
+    '<tbody id="detail-alerts-tbody"></tbody></table>';
+  html += '<div id="detail-no-alerts" style="display:none; text-align:center; padding:20px; color:var(--muted); font-size:12px;">ไม่มีประวัติแจ้งเตือนสำหรับเซนเซอร์นี้</div>';
+
+  document.getElementById('detail-body').innerHTML = html;
+  document.getElementById('detail-overlay').classList.add('active');
+
+  // Fetch sensor-specific alerts
+  try {
+    const res = await apiGet('/api/dashboard-data?type=sensor-detail&sensor_id=' + sensorId);
+    detailAlerts = res.alerts || [];
+    const loading = document.getElementById('detail-alerts-loading');
+    const table = document.getElementById('detail-alerts-table');
+    const noAlerts = document.getElementById('detail-no-alerts');
+    const tbody = document.getElementById('detail-alerts-tbody');
+
+    loading.style.display = 'none';
+
+    if (detailAlerts.length === 0) {
+      noAlerts.style.display = 'block';
+    } else {
+      table.style.display = 'table';
+      tbody.innerHTML = detailAlerts.map(a => {
+        const sevClass = (a.severity || '').toLowerCase() === 'critical' ? 'sev-critical' : 'sev-warning';
+        const stClass = a.status === 'open' ? 'st-open' : a.status === 'acknowledged' ? 'st-ack' : 'st-resolved';
+        const dur = a.response_time_min ? a.response_time_min + ' min' : '—';
+        return '<tr>' +
+          '<td>' + formatDateTime(a.created_at) + '</td>' +
+          '<td style="font-weight:700;">' + (a.trigger_value || a.value || '—') + ' ' + s.unit + '</td>' +
+          '<td><span class="severity-badge ' + sevClass + '">' + (a.severity || 'warning') + '</span></td>' +
+          '<td><span class="status-badge ' + stClass + '">' + (a.status || '').toUpperCase() + '</span></td>' +
+          '<td>' + (a.acknowledged_by_name || '—') + '</td>' +
+          '<td>' + (a.resolved_by_name || '—') + '</td>' +
+          '<td>' + dur + '</td>' +
+          '</tr>';
+      }).join('');
+    }
+  } catch (err) {
+    document.getElementById('detail-alerts-loading').textContent = 'Error loading data';
+    console.error(err);
+  }
+}
+
+function closeDetail() {
+  document.getElementById('detail-overlay').classList.remove('active');
+}
+
+function exportSensorCSV() {
+  if (!currentDetailSensorId || detailAlerts.length === 0) {
+    showToast('No data to export', 'info');
+    return;
+  }
+  const s = SENSORS.find(x => x.id === currentDetailSensorId);
+  const rows = [['Time', 'Value', 'Unit', 'Severity', 'Status', 'Acknowledged By', 'Resolved By', 'Duration (min)']];
+  detailAlerts.forEach(a => {
+    rows.push([
+      a.created_at || '',
+      a.trigger_value || a.value || '',
+      s ? s.unit : '',
+      a.severity || '',
+      a.status || '',
+      a.acknowledged_by_name || '',
+      a.resolved_by_name || '',
+      a.response_time_min || '',
+    ]);
+  });
+  const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'sensor_' + currentDetailSensorId + '_alerts.csv';
+  link.click();
+  showToast('CSV exported', 'success');
+}
+
+// ====================================================
 //  LINE PREVIEWS
-// ══════════════════════════════════════════════
+// ====================================================
 function renderLinePreview(alert, sensor) {
-  document.getElementById('line-preview-area').innerHTML = `<div class="line-preview">
-    <div style="font-size:11px; color:white; margin-bottom:8px; font-weight:600;">LINE OA — Alert Notification</div>
-    <div class="line-bubble">
-      <div class="line-bubble-header" style="background:${alert.severity === 'critical' ? '#D32F2F' : '#F7941D'}">
-        ⚠️ ${alert.severity === 'critical' ? 'ALARM' : 'WARNING'} — ${sensor.nameTH}
-      </div>
-      <div class="line-bubble-body">
-        <div class="line-bubble-row"><span class="label">Sensor</span><span class="val">${alert.sensorId}</span></div>
-        <div class="line-bubble-row"><span class="label">จุดตรวจวัด</span><span class="val">${sensor.name}</span></div>
-        <div class="line-bubble-row"><span class="label">ค่าปัจจุบัน</span><span class="val" style="color:var(--danger)">${alert.value.toFixed(1)} ${sensor.unit}</span></div>
-        <div class="line-bubble-row"><span class="label">Threshold</span><span class="val">${alert.direction} ${alert.threshold} ${sensor.unit}</span></div>
-        <div class="line-bubble-row"><span class="label">เวลา</span><span class="val">${formatTime(alert.time)}</span></div>
-      </div>
-      <div class="line-bubble-btn" style="color:var(--primary);">✅ ยืนยันเข้าหน้างาน</div>
-    </div>
-  </div>`;
+  document.getElementById('line-preview-area').innerHTML = '<div class="line-preview">' +
+    '<div style="font-size:11px; color:white; margin-bottom:8px; font-weight:600;">LINE OA — Alert Notification</div>' +
+    '<div class="line-bubble">' +
+      '<div class="line-bubble-header" style="background:' + (alert.severity === 'critical' ? '#D32F2F' : '#F7941D') + '">' +
+        'WARNING — ' + sensor.nameTH +
+      '</div>' +
+      '<div class="line-bubble-body">' +
+        '<div class="line-bubble-row"><span class="label">Sensor</span><span class="val">' + alert.sensorId + '</span></div>' +
+        '<div class="line-bubble-row"><span class="label">จุดตรวจวัด</span><span class="val">' + sensor.name + '</span></div>' +
+        '<div class="line-bubble-row"><span class="label">ค่าปัจจุบัน</span><span class="val" style="color:var(--danger)">' + alert.value.toFixed(1) + ' ' + sensor.unit + '</span></div>' +
+        '<div class="line-bubble-row"><span class="label">Threshold</span><span class="val">' + alert.direction + ' ' + alert.threshold + ' ' + sensor.unit + '</span></div>' +
+        '<div class="line-bubble-row"><span class="label">เวลา</span><span class="val">' + formatTime(alert.time) + '</span></div>' +
+      '</div>' +
+      '<div class="line-bubble-btn" style="color:var(--primary);">ยืนยันเข้าหน้างาน</div>' +
+    '</div>' +
+  '</div>';
 }
 
 function renderLineAck(alert) {
-  document.getElementById('line-preview-area').innerHTML = `<div class="line-preview">
-    <div style="font-size:11px; color:white; margin-bottom:8px; font-weight:600;">LINE OA — Acknowledgment</div>
-    <div class="line-bubble">
-      <div class="line-bubble-header" style="background:var(--primary)">
-        👷 กำลังเข้าตรวจสอบ — ${alert.sensorId}
-      </div>
-      <div class="line-bubble-body">
-        <div class="line-bubble-row"><span class="label">ผู้รับผิดชอบ</span><span class="val" style="color:var(--primary)">${alert.responder}</span></div>
-        <div class="line-bubble-row"><span class="label">รับทราบเมื่อ</span><span class="val">${formatTime(alert.ackTime)}</span></div>
-        <div style="margin-top:8px; padding:8px; background:#E3F2FD; border-radius:8px; font-size:11px; color:#1565C0;">
-          ${alert.responder} กำลังเดินทางไปหน้างาน
-        </div>
-      </div>
-      <div class="line-bubble-btn" style="color:var(--success);">✅ ซ่อมเสร็จแล้ว</div>
-    </div>
-  </div>`;
+  document.getElementById('line-preview-area').innerHTML = '<div class="line-preview">' +
+    '<div style="font-size:11px; color:white; margin-bottom:8px; font-weight:600;">LINE OA — Acknowledgment</div>' +
+    '<div class="line-bubble">' +
+      '<div class="line-bubble-header" style="background:var(--primary)">กำลังเข้าตรวจสอบ — ' + alert.sensorId + '</div>' +
+      '<div class="line-bubble-body">' +
+        '<div class="line-bubble-row"><span class="label">ผู้รับผิดชอบ</span><span class="val" style="color:var(--primary)">' + alert.responder + '</span></div>' +
+        '<div class="line-bubble-row"><span class="label">รับทราบเมื่อ</span><span class="val">' + formatTime(alert.ackTime) + '</span></div>' +
+        '<div style="margin-top:8px; padding:8px; background:#E3F2FD; border-radius:8px; font-size:11px; color:#1565C0;">' +
+          alert.responder + ' กำลังเดินทางไปหน้างาน' +
+        '</div>' +
+      '</div>' +
+      '<div class="line-bubble-btn" style="color:var(--success);">ซ่อมเสร็จแล้ว</div>' +
+    '</div>' +
+  '</div>';
 }
 
 function renderLineResolved(alert) {
   const mins = alert.ackTime ? Math.round((alert.resolveTime - alert.ackTime) / 60000) || 1 : 1;
-  document.getElementById('line-preview-area').innerHTML = `<div class="line-preview">
-    <div style="font-size:11px; color:white; margin-bottom:8px; font-weight:600;">LINE OA — Resolved</div>
-    <div class="line-bubble">
-      <div class="line-bubble-header" style="background:var(--success)">
-        ✅ แก้ไขเสร็จแล้ว — ${alert.sensorId}
-      </div>
-      <div class="line-bubble-body">
-        <div class="line-bubble-row"><span class="label">แก้ไขโดย</span><span class="val" style="color:var(--success)">${alert.responder}</span></div>
-        <div class="line-bubble-row"><span class="label">เวลาแก้ไข</span><span class="val">${mins} นาที</span></div>
-        <div class="line-bubble-row"><span class="label">สถานะ</span><span class="val" style="color:var(--success)">ปกติ</span></div>
-        <div style="margin-top:8px; padding:8px; background:#E8F5E9; border-radius:8px; font-size:11px; color:#2E7D32;">
-          เซนเซอร์กลับสู่ค่าปกติแล้ว บันทึกเข้าระบบเรียบร้อย
-        </div>
-      </div>
-    </div>
-  </div>`;
+  document.getElementById('line-preview-area').innerHTML = '<div class="line-preview">' +
+    '<div style="font-size:11px; color:white; margin-bottom:8px; font-weight:600;">LINE OA — Resolved</div>' +
+    '<div class="line-bubble">' +
+      '<div class="line-bubble-header" style="background:var(--success)">แก้ไขเสร็จแล้ว — ' + alert.sensorId + '</div>' +
+      '<div class="line-bubble-body">' +
+        '<div class="line-bubble-row"><span class="label">แก้ไขโดย</span><span class="val" style="color:var(--success)">' + alert.responder + '</span></div>' +
+        '<div class="line-bubble-row"><span class="label">เวลาแก้ไข</span><span class="val">' + mins + ' นาที</span></div>' +
+        '<div class="line-bubble-row"><span class="label">สถานะ</span><span class="val" style="color:var(--success)">ปกติ</span></div>' +
+        '<div style="margin-top:8px; padding:8px; background:#E8F5E9; border-radius:8px; font-size:11px; color:#2E7D32;">' +
+          'เซนเซอร์กลับสู่ค่าปกติแล้ว บันทึกเข้าระบบเรียบร้อย' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
 }
 
-// ══════════════════════════════════════════════
+// ====================================================
 //  HELPERS
-// ══════════════════════════════════════════════
+// ====================================================
 function addMaintLog(text, color) {
   const log = document.getElementById('maint-log');
   if (log.querySelector('div[style]') && !log.querySelector('.log-item')) log.innerHTML = '';
   const item = document.createElement('div');
   item.className = 'log-item';
-  item.innerHTML = `<div class="log-dot" style="background:${color}"></div>
-    <div><div>${text}</div><div class="log-time">${formatTime(new Date())}</div></div>`;
+  item.innerHTML = '<div class="log-dot" style="background:' + color + '"></div>' +
+    '<div><div>' + text + '</div><div class="log-time">' + formatTime(new Date()) + '</div></div>';
   log.prepend(item);
   while (log.children.length > 8) log.removeChild(log.lastChild);
 }
@@ -1337,7 +1321,15 @@ function updateStats() {
 }
 
 function formatTime(d) {
-  return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  if (!d) return '—';
+  return new Date(d).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function formatDateTime(str) {
+  if (!str) return '—';
+  const d = new Date(str);
+  return d.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' +
+    d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
 }
 
 function updateClock() {
@@ -1347,39 +1339,34 @@ function updateClock() {
   });
 }
 
-function showToast(msg, type = 'info') {
+function showToast(msg, type) {
+  type = type || 'info';
   const container = document.getElementById('toast-container');
   const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
+  toast.className = 'toast ' + type;
   toast.textContent = msg;
   container.appendChild(toast);
-  setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 4000);
+  setTimeout(function() { toast.style.opacity = '0'; setTimeout(function() { toast.remove(); }, 300); }, 4000);
 }
 
-// ══════════════════════════════════════════════
+// ====================================================
 //  START
-// ══════════════════════════════════════════════
-const hasKey = loadSettings();
+// ====================================================
+loadSettings();
 buildSensorCards();
 setInterval(updateSensors, CONFIG.POLL_INTERVAL);
 setInterval(updateClock, 1000);
 updateClock();
 
-// Auto-connect if API key was saved
-if (hasKey) {
-  CONFIG.isLive = true;
-  updateConnectionUI();
-  updateAutoStatus();
-  addMaintLog('🔗 Auto-connected from saved settings', 'var(--success)');
-  // Fetch data immediately
-  setTimeout(() => {
-    fetchDashboardData();
-    fetchAlertHistory();
-  }, 500);
-}
+// Always live mode — fetch data immediately
+addMaintLog('System started — Live Mode', 'var(--success)');
+setTimeout(function() {
+  fetchDashboardData();
+  fetchAlertHistory();
+}, 500);
 
-// Poll API data when in live mode
-setInterval(() => { if (CONFIG.isLive) fetchDashboardData(); }, 5000);
+// Poll API data every 5 seconds
+setInterval(function() { fetchDashboardData(); }, 5000);
 </script>
 </body>
 </html>
