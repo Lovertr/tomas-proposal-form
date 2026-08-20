@@ -111,6 +111,7 @@ module.exports = async function handler(req, res) {
 
     // Send LINE push with "ซ่อมสำเร็จ" button to the acknowledger
     const lineToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+    console.log("=== ACK LINE PUSH ===", "token?", !!lineToken, "len:", lineToken ? lineToken.length : 0, "to:", line_user_id, "alert:", alert_id);
     if (lineToken) {
       const sid = sensor_id || alert.sensor_id;
       const sName = alert.sensors?.name || sid;
