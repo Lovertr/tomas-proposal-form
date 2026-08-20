@@ -84,7 +84,12 @@
 
   /* -- LAYOUT -- */
   .container { max-width: 1800px; margin: 0 auto; padding: 16px 20px; }
-  .grid-sensors { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .grid-sensors { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin-bottom: 16px; max-height: calc(100vh - 220px); overflow-y: auto; padding-right: 4px; }
+  .grid-sensors::-webkit-scrollbar { width: 6px; }
+  .grid-sensors::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .grid-sensors::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+  .sensor-responder { display: none; font-size: 11px; color: #fff; background: var(--primary); border-radius: 4px; padding: 2px 8px; margin-top: 6px; text-align: center; font-weight: 600; }
+  .sensor-card.alarm .sensor-responder, .sensor-card.warning-state .sensor-responder { display: block; }
   .grid-bottom { display: grid; grid-template-columns: 1fr; gap: 16px; }
 
   /* -- VIEW TOGGLE -- */
@@ -628,40 +633,11 @@
   <!-- SENSOR TABLE (Compact View) -->
   <div id="sensor-compact" style="display:none;"></div>
 
-  <!-- ALERT HISTORY (full width) -->
-  <div class="panel">
-    <div class="panel-title"><span class="icon">&#128680;</span> Alert History / ประวัติการแจ้งเตือน</div>
-    <table class="alert-table">
-      <thead>
-        <tr><th>Time</th><th>Sensor</th><th>Value</th><th>Threshold</th><th>Severity</th><th>Status</th><th>Responder</th><th>Action</th></tr>
-      </thead>
-      <tbody id="alert-tbody"></tbody>
-    </table>
-    <div id="no-alerts" style="text-align:center; padding:30px; color:var(--muted); font-size:13px;">
-      ไม่มีการแจ้งเตือน — All sensors operating normally
-    </div>
-  </div>
-
-  <!-- SECONDARY PANELS (LINE Preview + Activity Log) -->
-  <div class="secondary-panels">
-    <div class="panel">
-      <div class="panel-title"><span class="icon">&#128172;</span> LINE Alert Preview</div>
-      <div id="line-preview-area">
-        <div style="text-align:center; padding:20px; color:var(--muted); font-size:12px;">
-          กดปุ่ม Alarm เพื่อดูตัวอย่างข้อความ LINE
-        </div>
-      </div>
-    </div>
-
-    <div class="panel">
-      <div class="panel-title"><span class="icon">&#128203;</span> Activity Log</div>
-      <div id="maint-log">
-        <div style="text-align:center; padding:20px; color:var(--muted); font-size:12px;">
-          ยังไม่มีกิจกรรม
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- Hidden containers for backward compatibility -->
+  <div id="alert-tbody" style="display:none;"></div>
+  <div id="no-alerts" style="display:none;"></div>
+  <div id="line-preview-area" style="display:none;"></div>
+  <div id="maint-log" style="display:none;"></div>
 </div>
 
 <!-- SIMULATOR SIDEBAR -->
@@ -1839,6 +1815,7 @@ function buildSensorCards() {
         '</div>' +
         '<div class="gauge-bar-markers"><span>' + s.min + '</span><span>' + s.max + ' ' + s.unit + '</span></div>' +
       '</div>' +
+      '<div class="sensor-responder" id="responder-' + s.id + '"></div>' +
       '<div class="mini-chart-wrap"><canvas class="mini-chart" id="chart-' + s.id + '"></canvas></div>' +
     '</div>';
   }).join('');
@@ -1967,6 +1944,27 @@ function updateSensorDisplay() {
     var barColor = d.status === 'alarm' ? 'var(--danger)' : d.status === 'warning' ? 'var(--warning)' : 'var(--accent)';
     gauge.style.width = Math.min(100, Math.max(0, pct)) + '%';
     gauge.style.background = barColor;
+
+    // Show responder name on card
+    var responderEl = document.getElementById('responder-' + s.id);
+    if (responderEl) {
+      var activeAlert = alerts.find(function(a) {
+        return a.sensorId === s.id && (a.status === 'open' || a.status === 'acknowledged');
+      });
+      if (activeAlert && activeAlert.responder) {
+        responderEl.textContent = '👷 ' + activeAlert.responder;
+        responderEl.style.display = 'block';
+      } else if (activeAlert && activeAlert.status === 'open') {
+        responderEl.textContent = '⚠️ รอผู้รับผิดชอบ';
+        responderEl.style.display = 'block';
+        responderEl.style.background = '#B71C1C';
+      } else {
+        responderEl.style.display = 'none';
+      }
+      if (activeAlert && activeAlert.responder) {
+        responderEl.style.background = 'var(--primary)';
+      }
+    }
 
     var chart = charts[s.id];
     if (chart) {
