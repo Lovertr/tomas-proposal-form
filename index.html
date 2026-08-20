@@ -1143,8 +1143,24 @@ function showSensorForm(mode, sensorId) {
     return '<option value="' + t + '"' + (s && s.signalType === t ? ' selected' : '') + '>' + t + '</option>';
   }).join('');
 
+  // Build "Copy from" dropdown (only for add mode)
+  var copyFromHtml = '';
+  if (mode === 'add' && SENSORS.length > 0) {
+    var copyOpts = SENSORS.map(function(x) {
+      return '<option value="' + x.id + '">' + x.id + ' — ' + escHtml(x.name) + ' (' + x.type + ')</option>';
+    }).join('');
+    copyFromHtml = '<div style="margin-bottom:12px; padding:10px 12px; background:var(--card-bg); border:1px dashed var(--border); border-radius:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">' +
+      '<span style="font-size:13px; color:var(--muted);">📋 Copy จากเซนเซอร์เดิม:</span>' +
+      '<select id="sf-copy-from" style="flex:1; min-width:180px; padding:4px 8px; border-radius:6px; border:1px solid var(--border); font-size:13px; background:var(--bg);">' +
+        '<option value="">— เลือกเพื่อ copy ค่า —</option>' + copyOpts +
+      '</select>' +
+      '<button type="button" class="btn btn-outline btn-sm" onclick="copySensorSettings()" style="font-size:12px; padding:4px 12px;">Copy</button>' +
+    '</div>';
+  }
+
   var html = '<div class="sensor-inline-form">' +
     '<h4>' + title + '</h4>' +
+    copyFromHtml +
     '<div class="form-grid">' +
       '<div class="form-group"><label>ID</label><input type="text" id="sf-id" value="' + (s ? s.id : '') + '"' + (mode === 'edit' ? ' disabled' : '') + ' placeholder="e.g. PT-03"></div>' +
       '<div class="form-group"><label>Name (EN)</label><input type="text" id="sf-name" value="' + escHtml(s ? s.name : '') + '" placeholder="e.g. Air Compressor"></div>' +
@@ -1180,6 +1196,51 @@ function showSensorForm(mode, sensorId) {
 function cancelSensorForm() {
   document.getElementById('sensor-inline-form-area').innerHTML = '';
   editingSensorId = null;
+}
+
+function copySensorSettings() {
+  var sel = document.getElementById('sf-copy-from');
+  if (!sel || !sel.value) { showToast('เลือกเซนเซอร์ที่ต้องการ copy ก่อน', 'warning'); return; }
+  var src = SENSORS.find(function(x) { return x.id === sel.value; });
+  if (!src) return;
+
+  // Auto-generate next ID: same prefix + incremented number
+  var idInput = document.getElementById('sf-id');
+  if (idInput && !idInput.value) {
+    var match = src.id.match(/^([A-Za-z]+-)(\d+)$/);
+    if (match) {
+      var prefix = match[1];
+      var existingNums = SENSORS.filter(function(x) { return x.id.startsWith(prefix); })
+        .map(function(x) { var m = x.id.match(/(\d+)$/); return m ? parseInt(m[1]) : 0; });
+      var nextNum = Math.max.apply(null, existingNums) + 1;
+      idInput.value = prefix + (nextNum < 10 ? '0' + nextNum : nextNum);
+    }
+  }
+
+  // Fill all fields except ID
+  document.getElementById('sf-name').value = src.name;
+  document.getElementById('sf-name-th').value = src.nameTH || '';
+  document.getElementById('sf-type').value = src.type;
+  document.getElementById('sf-signal').value = src.signalType || '4-20mA';
+  document.getElementById('sf-unit').value = src.unit;
+  document.getElementById('sf-location').value = src.location || '';
+  document.getElementById('sf-min').value = src.min != null ? src.min : '';
+  document.getElementById('sf-max').value = src.max != null ? src.max : '';
+  document.getElementById('sf-warn-low').value = src.warnLow != null ? src.warnLow : '';
+  document.getElementById('sf-warn-high').value = src.warnHigh != null ? src.warnHigh : '';
+  document.getElementById('sf-alarm-low').value = src.alarmLow != null ? src.alarmLow : '';
+  document.getElementById('sf-alarm-high').value = src.alarmHigh != null ? src.alarmHigh : '';
+
+  // Color
+  var colorEl = document.getElementById('sf-color');
+  var labelEl = document.getElementById('sf-color-label');
+  if (colorEl) {
+    var c = src.cardColor || SENSOR_TYPE_COLORS[src.type] || '#1565C0';
+    colorEl.value = c;
+    if (labelEl) labelEl.textContent = src.cardColor ? src.cardColor : 'Default';
+  }
+
+  showToast('Copy จาก ' + src.id + ' แล้ว — แก้ ID + ชื่อก่อนบันทึก', 'success');
 }
 
 function resetSensorColor() {
@@ -1567,22 +1628,13 @@ async function fetchDashboardData() {
         var apiHasOpenForThis = apiOpenSensorIds.has(s.id);
         if (apiHasOpenForThis) {
           d.value = r.value;
-          if ((s.alarmHigh && r.value >= s.alarmHigh) || (s.alarmLow !== null && s.alarmLow !== undefined && r.value <= s.alarmLow)) {
-            d.status = 'alarm'; d.alarm = true;
-          } else if ((s.warnHigh && r.value >= s.warnHigh) || (s.warnLow !== null && s.warnLow !== undefined && r.value <= s.warnLow)) {
-            d.status = 'warning'; d.alarm = false;
-          } else {
-            d.status = 'normal'; d.alarm = false;
-          }
+          d.status = checkSensorStatus(s, r.value);
+          d.alarm = (d.status === 'alarm');
         } else {
-          // No open alert — trust normal state, don't re-alarm from stale API value
+          // No open alert — still show correct status from value
           if (!d.alarm) {
             d.value = r.value;
-            if ((s.warnHigh && r.value >= s.warnHigh) || (s.warnLow !== null && s.warnLow !== undefined && r.value <= s.warnLow)) {
-              d.status = 'warning';
-            } else {
-              d.status = 'normal';
-            }
+            d.status = checkSensorStatus(s, r.value);
           }
         }
         sensorHistories[s.id].push(d.value);
@@ -1997,6 +2049,15 @@ function updateSensorDisplay() {
 }
 
 // ====================================================
+//  CHECK SENSOR STATUS (shared helper)
+// ====================================================
+function checkSensorStatus(sensor, value) {
+  if ((sensor.alarmHigh != null && value >= sensor.alarmHigh) || (sensor.alarmLow != null && value <= sensor.alarmLow)) return 'alarm';
+  if ((sensor.warnHigh != null && value >= sensor.warnHigh) || (sensor.warnLow != null && value <= sensor.warnLow)) return 'warning';
+  return 'normal';
+}
+
+// ====================================================
 //  SIMULATE NORMAL FLUCTUATION
 // ====================================================
 function updateSensors() {
@@ -2004,11 +2065,13 @@ function updateSensors() {
     var d = sensorData[s.id];
     if (!d) return;
     if (!d.alarm) {
-      var drift = (s.nominal - d.value) * 0.05;
+      // Drift toward midpoint of normal range (not nominal which may be outside thresholds)
+      var safeTarget = (s.warnLow != null && s.warnHigh != null) ? (s.warnLow + s.warnHigh) / 2 : s.nominal;
+      var drift = (safeTarget - d.value) * 0.05;
       var range = (s.warnHigh || s.nominal * 1.2) - (s.warnLow || s.nominal * 0.8);
       var noise = (Math.random() - 0.5) * range * 0.06;
       d.value = Math.max(s.min, Math.min(s.max, d.value + drift + noise));
-      d.status = 'normal';
+      d.status = checkSensorStatus(s, d.value);
     }
     sensorHistories[s.id].push(d.value);
     if (sensorHistories[s.id].length > 30) sensorHistories[s.id].shift();
