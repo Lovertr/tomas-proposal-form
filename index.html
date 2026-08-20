@@ -1560,21 +1560,42 @@ async function fetchDashboardData() {
     var alertsRes = results[1];
     var summaryRes = results[2];
 
+    // Build set of sensor IDs with open alerts in API (used to prevent false re-alarm)
+    var apiOpenSensorIds = new Set();
+    if (alertsRes.alerts) {
+      alertsRes.alerts.forEach(function(a) { apiOpenSensorIds.add(a.sensor_id); });
+    }
+
     if (latestRes.readings) {
       latestRes.readings.forEach(function(r) {
         var s = SENSORS.find(function(x) { return x.id === r.sensor_id; });
         if (!s) return;
         var d = sensorData[s.id];
         if (!d) return;
-        d.value = r.value;
-        if ((s.alarmHigh && r.value >= s.alarmHigh) || (s.alarmLow !== null && s.alarmLow !== undefined && r.value <= s.alarmLow)) {
-          d.status = 'alarm'; d.alarm = true;
-        } else if ((s.warnHigh && r.value >= s.warnHigh) || (s.warnLow !== null && s.warnLow !== undefined && r.value <= s.warnLow)) {
-          d.status = 'warning'; d.alarm = false;
+        // Only set alarm if API confirms an open alert exists for this sensor
+        // This prevents re-triggering alarm state after resolve (when latest_readings still has old value)
+        var apiHasOpenForThis = apiOpenSensorIds.has(s.id);
+        if (apiHasOpenForThis) {
+          d.value = r.value;
+          if ((s.alarmHigh && r.value >= s.alarmHigh) || (s.alarmLow !== null && s.alarmLow !== undefined && r.value <= s.alarmLow)) {
+            d.status = 'alarm'; d.alarm = true;
+          } else if ((s.warnHigh && r.value >= s.warnHigh) || (s.warnLow !== null && s.warnLow !== undefined && r.value <= s.warnLow)) {
+            d.status = 'warning'; d.alarm = false;
+          } else {
+            d.status = 'normal'; d.alarm = false;
+          }
         } else {
-          d.status = 'normal'; d.alarm = false;
+          // No open alert — trust normal state, don't re-alarm from stale API value
+          if (!d.alarm) {
+            d.value = r.value;
+            if ((s.warnHigh && r.value >= s.warnHigh) || (s.warnLow !== null && s.warnLow !== undefined && r.value <= s.warnLow)) {
+              d.status = 'warning';
+            } else {
+              d.status = 'normal';
+            }
+          }
         }
-        sensorHistories[s.id].push(r.value);
+        sensorHistories[s.id].push(d.value);
         if (sensorHistories[s.id].length > 30) sensorHistories[s.id].shift();
       });
     }
@@ -2469,23 +2490,26 @@ let pollReAlertTimer = null;
 //  so sensor-ingest.js can trigger re-alert reminders
 // ====================================================
 async function checkAndResendAlarms() {
-  // Only re-send for sensors that have BOTH: d.alarm=true AND an open/acknowledged alert
-  // This prevents creating new alerts after resolve via LINE (where d.alarm hasn't synced yet)
-  var alarmSensors = SENSORS.filter(function(s) {
-    var d = sensorData[s.id];
-    if (!d || !d.alarm) return false;
-    // Must have an active (open or acknowledged) alert for this sensor
-    var hasActiveAlert = alerts.some(function(a) {
-      return a.sensorId === s.id && (a.status === 'open' || a.status === 'acknowledged');
-    });
-    return hasActiveAlert;
-  });
-  if (alarmSensors.length === 0) return;
+  // Verify with API which sensors actually have open alerts (not just local state)
+  var openAlertSensorIds = new Set();
+  try {
+    var alertsRes = await apiGet('/api/dashboard-data?type=alerts');
+    if (alertsRes && alertsRes.alerts) {
+      alertsRes.alerts.forEach(function(a) { openAlertSensorIds.add(a.sensor_id); });
+    }
+  } catch (e) {
+    console.error('Re-alert: failed to fetch alerts, skipping cycle', e);
+    return; // Don't re-send if we can't verify
+  }
 
-  for (var i = 0; i < alarmSensors.length; i++) {
-    var s = alarmSensors[i];
+  if (openAlertSensorIds.size === 0) return;
+
+  // Only re-send for sensors confirmed to have open alerts in the API
+  for (var i = 0; i < SENSORS.length; i++) {
+    var s = SENSORS[i];
+    if (!openAlertSensorIds.has(s.id)) continue;
     var d = sensorData[s.id];
-    if (!d) continue;
+    if (!d || !d.alarm) continue;
     try {
       await sendSensorValue(s.id, parseFloat(d.value.toFixed(1)));
     } catch (e) {
