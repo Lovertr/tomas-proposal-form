@@ -248,7 +248,7 @@ async function handleResolveSubmit(req, res) {
     const ackAt = alert.acknowledged_at || now;
     const responseMin = Math.round((new Date(now) - new Date(alert.created_at)) / 60000);
 
-    // Update alert
+    // Update THIS alert
     await supabase.from("alerts").update({
       status: "resolved",
       resolved_by: user.id,
@@ -257,11 +257,60 @@ async function handleResolveSubmit(req, res) {
       response_time_min: responseMin,
     }).eq("id", alert_id);
 
-    // Log action
+    // ALSO resolve ALL other open/acknowledged alerts for the same sensor
+    // This prevents stale alerts from keeping the sensor in ALARM state
+    const { data: otherAlerts } = await supabase
+      .from("alerts")
+      .select("id")
+      .eq("sensor_id", alert.sensor_id)
+      .in("status", ["open", "acknowledged"])
+      .neq("id", alert_id);
+
+    if (otherAlerts && otherAlerts.length > 0) {
+      const otherIds = otherAlerts.map(a => a.id);
+      await supabase.from("alerts").update({
+        status: "resolved",
+        resolved_by: user.id,
+        resolved_at: now,
+        root_cause: root_cause ? `(auto) ${root_cause}` : "(auto) resolved with related alert",
+      }).in("id", otherIds);
+
+      // Log auto-resolve for each
+      for (const oid of otherIds) {
+        await supabase.from("alert_actions").insert({
+          alert_id: oid, user_id: user.id, action: "resolved",
+          note: `Auto-resolved: related alert ${alert_id} was resolved by ${user.display_name}`,
+        });
+      }
+    }
+
+    // Log action for the main alert
     await supabase.from("alert_actions").insert({
       alert_id, user_id: user.id, action: "resolved",
       note: `${user.display_name} resolved via LINE. ${root_cause ? 'สาเหตุ: ' + root_cause : 'ไม่ได้ระบุสาเหตุ'}`,
     });
+
+    // Reset sensor to normal value so dashboard shows NORMAL
+    const sensorConfig = alert.sensors;
+    if (sensorConfig) {
+      const normalVal = sensorConfig.threshold_low != null
+        ? ((sensorConfig.threshold_low + sensorConfig.threshold_high) / 2)
+        : ((sensorConfig.min_value || 0) + ((sensorConfig.threshold_high || 50) - (sensorConfig.min_value || 0)) * 0.6);
+      const { error: readingErr } = await supabase.from("sensor_readings").insert({
+        sensor_id: alert.sensor_id,
+        value: parseFloat(normalVal.toFixed(1)),
+        is_anomaly: false,
+      });
+      if (readingErr) console.error("Failed to insert normal reading:", readingErr.message);
+    } else {
+      // Fallback: insert a mid-range value even without sensor config
+      console.warn("No sensor config found for", alert.sensor_id, "— inserting fallback normal reading");
+      await supabase.from("sensor_readings").insert({
+        sensor_id: alert.sensor_id,
+        value: 0,
+        is_anomaly: false,
+      });
+    }
 
     // Send LINE confirmation to resolver
     const lineToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
