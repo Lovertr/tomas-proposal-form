@@ -178,7 +178,7 @@ function buildAlertFlex(alertId, sensor, value, anomaly, timestamp, lineUserId) 
             action: {
               type: "uri",
               label: "✅ ยืนยันเข้าหน้างาน",
-              uri: `https://tomas-proposal-form.vercel.app/api/acknowledge-web?alert_id=${alertId}&line_user_id=${lineUserId}&sensor_id=${sensor.id}`,
+              uri: `https://consetech-monitoring.vercel.app/api/acknowledge-web?alert_id=${alertId}&line_user_id=${lineUserId}&sensor_id=${sensor.id}`,
             },
           },
         ],
@@ -426,7 +426,7 @@ module.exports = async function handler(req, res) {
                               action: {
                                 type: "uri",
                                 label: "✅ ยืนยันเข้าหน้างาน",
-                                uri: `https://tomas-proposal-form.vercel.app/api/acknowledge-web?alert_id=${existingAlert.id}&line_user_id=${uid}&sensor_id=${sensor.id}`,
+                                uri: `https://consetech-monitoring.vercel.app/api/acknowledge-web?alert_id=${existingAlert.id}&line_user_id=${uid}&sensor_id=${sensor.id}`,
                               },
                             }],
                           },

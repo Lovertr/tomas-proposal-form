@@ -314,7 +314,7 @@ module.exports = async function handler(req, res) {
                     action: {
                       type: "uri",
                       label: "📋 ลงทะเบียน",
-                      uri: "https://tomas-proposal-form.vercel.app/register.html",
+                      uri: "https://consetech-monitoring.vercel.app/register.html",
                     },
                   },
                 ],
@@ -342,7 +342,7 @@ module.exports = async function handler(req, res) {
 
         if (!user) {
           await replyLineMessage(replyToken, [
-            { type: "text", text: "กรุณาลงทะเบียนก่อนใช้งาน\nhttps://tomas-proposal-form.vercel.app/register.html" },
+            { type: "text", text: "กรุณาลงทะเบียนก่อนใช้งาน\nhttps://consetech-monitoring.vercel.app/register.html" },
           ]);
           continue;
         }
@@ -524,7 +524,7 @@ module.exports = async function handler(req, res) {
         await replyLineMessage(replyToken, [
           {
             type: "text",
-            text: "ระบบ CONSERTECH Sensor Monitor\nใช้สำหรับรับการแจ้งเตือนจากเซ็นเซอร์เท่านั้น\n\nหากยังไม่ได้ลงทะเบียน กรุณาลงทะเบียนที่:\nhttps://tomas-proposal-form.vercel.app/register.html",
+            text: "ระบบ CONSERTECH Sensor Monitor\nใช้สำหรับรับการแจ้งเตือนจากเซ็นเซอร์เท่านั้น\n\nหากยังไม่ได้ลงทะเบียน กรุณาลงทะเบียนที่:\nhttps://consetech-monitoring.vercel.app/register.html",
           },
         ]);
         continue;

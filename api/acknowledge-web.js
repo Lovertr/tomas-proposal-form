@@ -95,7 +95,7 @@ async function handleAcknowledge(req, res) {
     if (lineToken) {
       const sid = sensor_id || alert.sensor_id;
       const sName = alert.sensors?.name || sid;
-      const resolveUri = `https://tomas-proposal-form.vercel.app/api/acknowledge-web?action=resolve&alert_id=${alert_id}&line_user_id=${line_user_id}&sensor_id=${sid}`;
+      const resolveUri = `https://consetech-monitoring.vercel.app/api/acknowledge-web?action=resolve&alert_id=${alert_id}&line_user_id=${line_user_id}&sensor_id=${sid}`;
       try {
         const resolveMsg = {
           type: "flex",
@@ -429,7 +429,7 @@ p{color:#64748B;font-size:14px;line-height:1.6;}
 <div class="icon">${icons[type] || '📋'}</div>
 <h1>${title}</h1>
 <p>${message}</p>
-<a class="back" href="https://tomas-proposal-form.vercel.app">กลับหน้า Dashboard</a>
+<a class="back" href="https://consetech-monitoring.vercel.app">กลับหน้า Dashboard</a>
 <div class="brand">CONSERTECH CO., LTD.<br>Utility Monitoring & Alert System</div>
 </div></body></html>`;
 }
