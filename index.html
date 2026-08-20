@@ -1155,6 +1155,10 @@ function showSensorForm(mode, sensorId) {
       '<div class="form-group"><label>Location / ตำแหน่ง</label><input type="text" id="sf-location" value="' + escHtml(s ? (s.location || '') : '') + '" placeholder="e.g. Building A"></div>' +
       '<div class="form-group"><label>Min Value</label><input type="number" step="any" id="sf-min" value="' + (s ? s.min : '') + '"></div>' +
       '<div class="form-group"><label>Max Value</label><input type="number" step="any" id="sf-max" value="' + (s ? s.max : '') + '"></div>' +
+      '<div class="form-group"><label>Warning Low / เตือนต่ำ</label><input type="number" step="any" id="sf-warn-low" value="' + (s && s.warnLow != null ? s.warnLow : '') + '" placeholder="ว่าง = ไม่ใช้"></div>' +
+      '<div class="form-group"><label>Warning High / เตือนสูง</label><input type="number" step="any" id="sf-warn-high" value="' + (s && s.warnHigh != null ? s.warnHigh : '') + '" placeholder="ว่าง = ไม่ใช้"></div>' +
+      '<div class="form-group"><label>Alarm Low / วิกฤตต่ำ</label><input type="number" step="any" id="sf-alarm-low" value="' + (s && s.alarmLow != null ? s.alarmLow : '') + '" placeholder="ว่าง = ไม่ใช้"></div>' +
+      '<div class="form-group"><label>Alarm High / วิกฤตสูง</label><input type="number" step="any" id="sf-alarm-high" value="' + (s && s.alarmHigh != null ? s.alarmHigh : '') + '" placeholder="ว่าง = ไม่ใช้"></div>' +
       '<div class="form-group"><label>Card Color / สีการ์ด</label>' +
         '<div style="display:flex; align-items:center; gap:8px;">' +
           '<input type="color" id="sf-color" value="' + (s && s.cardColor ? s.cardColor : (SENSOR_TYPE_COLORS[s ? s.type : 'pressure'] || '#1565C0')) + '" style="width:40px; height:32px; border:1px solid var(--border); border-radius:6px; cursor:pointer; padding:2px;">' +
@@ -1200,6 +1204,10 @@ async function submitSensorForm(mode) {
   var location = document.getElementById('sf-location').value.trim();
   var minVal = parseFloat(document.getElementById('sf-min').value);
   var maxVal = parseFloat(document.getElementById('sf-max').value);
+  var warnLowVal = document.getElementById('sf-warn-low').value.trim();
+  var warnHighVal = document.getElementById('sf-warn-high').value.trim();
+  var alarmLowVal = document.getElementById('sf-alarm-low').value.trim();
+  var alarmHighVal = document.getElementById('sf-alarm-high').value.trim();
   var colorEl = document.getElementById('sf-color');
   var pickedColor = colorEl ? colorEl.value : null;
   // Check if color is same as type default → store null (use default)
@@ -1219,8 +1227,10 @@ async function submitSensorForm(mode) {
         unit: unit, signal_type: signal, location: location,
         min_value: isNaN(minVal) ? 0 : minVal,
         max_value: isNaN(maxVal) ? 100 : maxVal,
-        normal_min: null, normal_max: null,
-        threshold_low: null, threshold_high: null,
+        normal_min: warnLowVal !== '' ? parseFloat(warnLowVal) : null,
+        normal_max: warnHighVal !== '' ? parseFloat(warnHighVal) : null,
+        threshold_low: alarmLowVal !== '' ? parseFloat(alarmLowVal) : null,
+        threshold_high: alarmHighVal !== '' ? parseFloat(alarmHighVal) : null,
         nominal: isNaN(minVal) || isNaN(maxVal) ? 50 : (minVal + maxVal) / 2,
         connection_protocol: 'Simulator', connection_config: '',
         polling_interval_sec: 30, sort_order: SENSORS.length + 1,
@@ -1235,6 +1245,10 @@ async function submitSensorForm(mode) {
         unit: unit, signal_type: signal, location: location,
         min_value: isNaN(minVal) ? undefined : minVal,
         max_value: isNaN(maxVal) ? undefined : maxVal,
+        normal_min: warnLowVal !== '' ? parseFloat(warnLowVal) : undefined,
+        normal_max: warnHighVal !== '' ? parseFloat(warnHighVal) : undefined,
+        threshold_low: alarmLowVal !== '' ? parseFloat(alarmLowVal) : undefined,
+        threshold_high: alarmHighVal !== '' ? parseFloat(alarmHighVal) : undefined,
         card_color: cardColor,
       });
       showToast('Sensor ' + editingSensorId + ' updated', 'success');
