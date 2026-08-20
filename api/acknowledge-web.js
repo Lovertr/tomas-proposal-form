@@ -115,46 +115,49 @@ module.exports = async function handler(req, res) {
       const sid = sensor_id || alert.sensor_id;
       const sName = alert.sensors?.name || sid;
       try {
-        await fetch("https://api.line.me/v2/bot/message/push", {
+        const resolveMsg = {
+          type: "flex",
+          altText: `🔧 กำลังดำเนินการซ่อม ${sName}`,
+          contents: {
+            type: "bubble",
+            header: {
+              type: "box", layout: "vertical", backgroundColor: "#F7941D",
+              contents: [{ type: "text", text: "🔧 กำลังดำเนินการ", color: "#FFFFFF", weight: "bold", size: "lg" }],
+            },
+            body: {
+              type: "box", layout: "vertical", spacing: "sm",
+              contents: [
+                { type: "text", text: sName, weight: "bold", size: "md" },
+                { type: "separator" },
+                { type: "box", layout: "horizontal", contents: [
+                  { type: "text", text: "Sensor", color: "#999999", size: "sm", flex: 2 },
+                  { type: "text", text: sid, weight: "bold", size: "sm", flex: 3 },
+                ]},
+                { type: "text", text: "คุณได้ยืนยันเข้าหน้างานแล้ว\nกรุณากดเมื่อซ่อมเสร็จ", size: "sm", color: "#555555", wrap: true, margin: "md" },
+              ],
+            },
+            footer: {
+              type: "box", layout: "vertical",
+              contents: [{
+                type: "button", style: "primary", color: "#388E3C",
+                action: { type: "postback", label: "✅ ซ่อมเสร็จแล้ว", data: `action=resolve&alert_id=${alert_id}` },
+              }],
+            },
+          },
+        };
+        console.log("LINE push resolve button to:", line_user_id, "alert:", alert_id);
+        const pushRes = await fetch("https://api.line.me/v2/bot/message/push", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${lineToken}` },
-          body: JSON.stringify({
-            to: line_user_id,
-            messages: [
-              {
-                type: "flex",
-                altText: `🔧 กำลังดำเนินการซ่อม ${sName}`,
-                contents: {
-                  type: "bubble",
-                  header: {
-                    type: "box", layout: "vertical", backgroundColor: "#F7941D",
-                    contents: [{ type: "text", text: "🔧 กำลังดำเนินการ", color: "#FFFFFF", weight: "bold", size: "lg" }],
-                  },
-                  body: {
-                    type: "box", layout: "vertical", spacing: "sm",
-                    contents: [
-                      { type: "text", text: sName, weight: "bold", size: "md" },
-                      { type: "separator" },
-                      { type: "box", layout: "horizontal", contents: [
-                        { type: "text", text: "Sensor", color: "#999999", size: "sm", flex: 2 },
-                        { type: "text", text: sid, weight: "bold", size: "sm", flex: 3 },
-                      ]},
-                      { type: "text", text: "คุณได้ยืนยันเข้าหน้างานแล้ว\nกรุณากดเมื่อซ่อมเสร็จ", size: "sm", color: "#555555", wrap: true, margin: "md" },
-                    ],
-                  },
-                  footer: {
-                    type: "box", layout: "vertical",
-                    contents: [{
-                      type: "button", style: "primary", color: "#388E3C",
-                      action: { type: "postback", label: "✅ ซ่อมเสร็จแล้ว", data: `action=resolve&alert_id=${alert_id}` },
-                    }],
-                  },
-                },
-              },
-            ],
-          }),
+          body: JSON.stringify({ to: line_user_id, messages: [resolveMsg] }),
         });
-      } catch (e) { console.error("LINE push failed:", e.message); }
+        if (!pushRes.ok) {
+          const errBody = await pushRes.text();
+          console.error("LINE push resolve FAILED:", pushRes.status, errBody);
+        } else {
+          console.log("LINE push resolve OK:", pushRes.status);
+        }
+      } catch (e) { console.error("LINE push error:", e.message); }
     }
 
     // Also broadcast acknowledge to other assigned users
