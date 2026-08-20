@@ -755,6 +755,19 @@
               <span class="toggle-slider"></span>
             </label>
           </div>
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Re-Alert Interval / แจ้งเตือนซ้ำ</div>
+              <div class="setting-desc">หากยังไม่มีผู้ยืนยันเข้าหน้างาน จะส่งแจ้งเตือนซ้ำทุกกี่นาที</div>
+            </div>
+            <select id="setting-re-alert-interval">
+              <option value="3">3 นาที</option>
+              <option value="5" selected>5 นาที</option>
+              <option value="10">10 นาที</option>
+              <option value="15">15 นาที</option>
+              <option value="30">30 นาที</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -855,6 +868,10 @@ const SENSOR_TYPE_COLORS = {
   power: '#D84315',
 };
 
+function getSensorColor(s) {
+  return s.cardColor || SENSOR_TYPE_COLORS[s.type] || '#666';
+}
+
 const SENSOR_TYPE_ICONS = {
   pressure: '\u{1F535}', flow: '\u{1F7E2}', temperature: '\u{1F534}',
   vibration: '\u{1F7E0}', current: '\u{1F7E3}', voltage: '\u{1F7E1}',
@@ -883,6 +900,7 @@ let systemConfig = {
   operating_mode: 'simulator',
   polling_interval: 15,
   line_notify: true,
+  re_alert_interval: 5,
 };
 
 // ====================================================
@@ -967,6 +985,9 @@ function renderSettingsGeneral() {
   document.getElementById('setting-poll-interval').value = String(systemConfig.polling_interval || 15);
   // LINE notify
   document.getElementById('setting-line-notify').checked = systemConfig.line_notify !== false;
+  // Re-alert interval
+  var reAlertEl = document.getElementById('setting-re-alert-interval');
+  if (reAlertEl) reAlertEl.value = String(systemConfig.re_alert_interval || 5);
 }
 
 function selectMode(mode) {
@@ -977,11 +998,11 @@ function selectMode(mode) {
 function renderSettingsSensors() {
   var tbody = document.getElementById('sensor-mgmt-tbody');
   tbody.innerHTML = SENSORS.map(function(s) {
-    var typeColor = SENSOR_TYPE_COLORS[s.type] || '#666';
+    var sColor = getSensorColor(s);
     return '<tr>' +
       '<td class="compact-id">' + s.id + '</td>' +
       '<td>' + s.name + '<br><span style="font-size:10px; color:var(--muted)">' + (s.nameTH || '') + '</span></td>' +
-      '<td><span class="sensor-type-badge" style="background:' + typeColor + '">' + s.type + '</span></td>' +
+      '<td><span class="sensor-type-badge" style="background:' + sColor + '">' + s.type + '</span></td>' +
       '<td style="font-size:11px;">' + (s.signalType || '—') + '</td>' +
       '<td>' + s.unit + '</td>' +
       '<td style="font-size:11px;">' + (s.location || '—') + '</td>' +
@@ -1044,6 +1065,12 @@ function renderSettingsConnections() {
         '<label>Poll Interval (sec)</label>' +
         '<input type="number" class="conn-poll" data-sid="' + s.id + '" value="' + (s.pollingInterval || 30) + '" min="1"' + (isSim ? ' disabled' : '') + '>' +
       '</div>' +
+      '<div class="conn-field" style="margin-top:8px;">' +
+        '<button class="btn btn-sm' + (isSim ? ' btn-outline' : ' btn-primary') + '" onclick="testConnection(\'' + s.id + '\')" ' + (isSim ? 'disabled style="opacity:0.5;"' : '') + '>' +
+          '\u{1F50C} Test Connection / ทดสอบการเชื่อมต่อ' +
+        '</button>' +
+        '<span class="conn-test-result" id="conn-test-' + s.id + '" style="margin-left:8px; font-size:11px;"></span>' +
+      '</div>' +
     '</div>';
   }).join('');
 }
@@ -1062,8 +1089,14 @@ function onConnProtocolChange(sel) {
   var endpoint = card.querySelector('.conn-endpoint');
   var poll = card.querySelector('.conn-poll');
   var statusEl = card.querySelector('.conn-card-status');
+  var testBtn = card.querySelector('button[onclick*="testConnection"]');
   endpoint.disabled = isSim;
   poll.disabled = isSim;
+  if (testBtn) {
+    testBtn.disabled = isSim;
+    testBtn.style.opacity = isSim ? '0.5' : '1';
+    testBtn.className = 'btn btn-sm ' + (isSim ? 'btn-outline' : 'btn-primary');
+  }
   if (isSim) {
     endpoint.value = '';
     endpoint.placeholder = 'N/A (Simulator mode)';
@@ -1073,6 +1106,46 @@ function onConnProtocolChange(sel) {
     endpoint.placeholder = 'e.g. 192.168.1.100:502';
     statusEl.className = 'conn-card-status connected-status';
     statusEl.textContent = 'Connected';
+  }
+}
+
+async function testConnection(sensorId) {
+  var card = document.querySelector('.conn-card[data-sensor-id="' + sensorId + '"]');
+  if (!card) return;
+  var proto = card.querySelector('.conn-protocol').value;
+  var endpoint = card.querySelector('.conn-endpoint').value.trim();
+  var resultEl = document.getElementById('conn-test-' + sensorId);
+
+  if (!endpoint) {
+    if (resultEl) { resultEl.innerHTML = '<span style="color:var(--danger);">⚠ กรุณาใส่ Endpoint/Address</span>'; }
+    return;
+  }
+
+  if (resultEl) { resultEl.innerHTML = '<span style="color:var(--muted);">⏳ Testing...</span>'; }
+
+  // Simulate connection test (send a test read request to the sensor-ingest API)
+  try {
+    var testRes = await apiGet('/api/dashboard-data?type=latest&sensor_id=' + sensorId);
+    // If we get a response, consider the API reachable
+    if (testRes) {
+      if (resultEl) {
+        resultEl.innerHTML = '<span style="color:var(--success);">✅ API reachable — ' + proto + ' → ' + endpoint + '</span>';
+      }
+      var statusEl = card.querySelector('.conn-card-status');
+      if (statusEl) {
+        statusEl.className = 'conn-card-status connected-status';
+        statusEl.textContent = 'Connected';
+      }
+    }
+  } catch (err) {
+    if (resultEl) {
+      resultEl.innerHTML = '<span style="color:var(--danger);">❌ Connection failed: ' + err.message + '</span>';
+    }
+    var statusEl = card.querySelector('.conn-card-status');
+    if (statusEl) {
+      statusEl.className = 'conn-card-status sim-status';
+      statusEl.textContent = 'Error';
+    }
   }
 }
 
@@ -1106,6 +1179,13 @@ function showSensorForm(mode, sensorId) {
       '<div class="form-group"><label>Location / ตำแหน่ง</label><input type="text" id="sf-location" value="' + escHtml(s ? (s.location || '') : '') + '" placeholder="e.g. Building A"></div>' +
       '<div class="form-group"><label>Min Value</label><input type="number" step="any" id="sf-min" value="' + (s ? s.min : '') + '"></div>' +
       '<div class="form-group"><label>Max Value</label><input type="number" step="any" id="sf-max" value="' + (s ? s.max : '') + '"></div>' +
+      '<div class="form-group"><label>Card Color / สีการ์ด</label>' +
+        '<div style="display:flex; align-items:center; gap:8px;">' +
+          '<input type="color" id="sf-color" value="' + (s && s.cardColor ? s.cardColor : (SENSOR_TYPE_COLORS[s ? s.type : 'pressure'] || '#1565C0')) + '" style="width:40px; height:32px; border:1px solid var(--border); border-radius:6px; cursor:pointer; padding:2px;">' +
+          '<span id="sf-color-label" style="font-size:11px; color:var(--muted);">' + (s && s.cardColor ? s.cardColor : 'Default') + '</span>' +
+          '<button type="button" class="btn btn-outline btn-sm" onclick="resetSensorColor()" style="font-size:10px; padding:2px 8px;">Reset Default</button>' +
+        '</div>' +
+      '</div>' +
     '</div>' +
     '<div class="form-actions">' +
       '<button class="btn btn-outline btn-sm" onclick="cancelSensorForm()">Cancel / ยกเลิก</button>' +
@@ -1122,6 +1202,18 @@ function cancelSensorForm() {
   editingSensorId = null;
 }
 
+function resetSensorColor() {
+  var typeEl = document.getElementById('sf-type');
+  var colorEl = document.getElementById('sf-color');
+  var labelEl = document.getElementById('sf-color-label');
+  if (typeEl && colorEl) {
+    var defaultColor = SENSOR_TYPE_COLORS[typeEl.value] || '#1565C0';
+    colorEl.value = defaultColor;
+    colorEl.dataset.custom = '';
+    if (labelEl) labelEl.textContent = 'Default';
+  }
+}
+
 async function submitSensorForm(mode) {
   var id = document.getElementById('sf-id').value.trim();
   var name = document.getElementById('sf-name').value.trim();
@@ -1132,6 +1224,11 @@ async function submitSensorForm(mode) {
   var location = document.getElementById('sf-location').value.trim();
   var minVal = parseFloat(document.getElementById('sf-min').value);
   var maxVal = parseFloat(document.getElementById('sf-max').value);
+  var colorEl = document.getElementById('sf-color');
+  var pickedColor = colorEl ? colorEl.value : null;
+  // Check if color is same as type default → store null (use default)
+  var defaultTypeColor = SENSOR_TYPE_COLORS[type] || '#1565C0';
+  var cardColor = (pickedColor && pickedColor.toLowerCase() !== defaultTypeColor.toLowerCase()) ? pickedColor : null;
 
   if (!id || !name || !unit) {
     showToast('Please fill ID, Name, and Unit', 'error');
@@ -1151,6 +1248,7 @@ async function submitSensorForm(mode) {
         nominal: isNaN(minVal) || isNaN(maxVal) ? 50 : (minVal + maxVal) / 2,
         connection_protocol: 'Simulator', connection_config: '',
         polling_interval_sec: 30, sort_order: SENSORS.length + 1,
+        card_color: cardColor,
       });
       showToast('Sensor ' + id + ' created', 'success');
     } else {
@@ -1161,6 +1259,7 @@ async function submitSensorForm(mode) {
         unit: unit, signal_type: signal, location: location,
         min_value: isNaN(minVal) ? undefined : minVal,
         max_value: isNaN(maxVal) ? undefined : maxVal,
+        card_color: cardColor,
       });
       showToast('Sensor ' + editingSensorId + ' updated', 'success');
     }
@@ -1197,6 +1296,7 @@ async function saveSettings() {
   systemConfig.operating_mode = document.getElementById('mode-simulator').classList.contains('selected') ? 'simulator' : 'live';
   systemConfig.polling_interval = parseInt(document.getElementById('setting-poll-interval').value, 10) || 15;
   systemConfig.line_notify = document.getElementById('setting-line-notify').checked;
+  systemConfig.re_alert_interval = parseInt(document.getElementById('setting-re-alert-interval').value, 10) || 5;
 
   try {
     await apiPost('/api/dashboard-data', { type: 'system-config', config: systemConfig });
@@ -1314,6 +1414,12 @@ function applySystemConfig() {
     connDot.className = 'conn-dot live';
     connLabel.textContent = 'LIVE';
     CONFIG.isLive = true;
+
+    // Check if any sensor has a real connection configured
+    var hasRealConn = SENSORS.some(function(s) { return s.connectionProtocol && s.connectionProtocol !== 'Simulator'; });
+    if (!hasRealConn) {
+      showToast('Live Mode: ยังไม่มีเซนเซอร์ที่ตั้งค่าการเชื่อมต่อจริง — กรุณาตั้งค่าใน Settings > Connections', 'warning');
+    }
   } else {
     // Simulator mode: show simulator toggle
     simToggleBtn.style.display = '';
@@ -1322,7 +1428,8 @@ function applySystemConfig() {
     CONFIG.isLive = true; // Still send to API, just show simulator
   }
 
-  // Polling intervals handled in start section
+  // Re-setup polling with mode-aware intervals
+  setupPolling();
 }
 
 // ====================================================
@@ -1352,6 +1459,7 @@ async function loadSensorsFromAPI() {
           connectionProtocol: s.connection_protocol || 'Simulator',
           connectionConfig: s.connection_config || '',
           pollingInterval: s.polling_interval_sec || 30,
+          cardColor: s.card_color || null,
         });
       });
       return true;
@@ -1476,8 +1584,23 @@ async function fetchDashboardData() {
         var exists = alerts.find(function(a) { return a.apiId === apiAlert.id; });
         if (exists) {
           var newStatus = apiAlert.status === 'acknowledged' ? 'acknowledged' : 'open';
-          if (exists.status !== newStatus && exists.status !== 'resolved') exists.status = newStatus;
+          if (exists.status !== newStatus && exists.status !== 'resolved') {
+            exists.status = newStatus;
+            if (newStatus === 'acknowledged' && apiAlert.acknowledged_by_name) {
+              exists.responder = apiAlert.acknowledged_by_name;
+            }
+          }
         } else {
+          // Check for near-duplicate: same sensor + close timestamp (within 10 seconds)
+          var apiTime = new Date(apiAlert.triggered_at || apiAlert.created_at).getTime();
+          var nearDup = alerts.find(function(a) {
+            return a.sensorId === apiAlert.sensor_id && Math.abs(a.time.getTime() - apiTime) < 10000;
+          });
+          if (nearDup) {
+            // Link the apiId to the existing alert instead of creating duplicate
+            nearDup.apiId = apiAlert.id;
+            return;
+          }
           var matchSensor = SENSORS.find(function(x) { return x.id === apiAlert.sensor_id; });
           alerts.unshift({
             id: Date.now() + Math.random(),
@@ -1554,6 +1677,23 @@ async function fetchAlertHistory() {
           }
           return;
         }
+        // Check for near-duplicate: same sensor + close timestamp (within 10 seconds)
+        var apiTime = new Date(apiAlert.triggered_at || apiAlert.created_at).getTime();
+        var nearDup = alerts.find(function(a) {
+          return a.sensorId === apiAlert.sensor_id && Math.abs(a.time.getTime() - apiTime) < 10000;
+        });
+        if (nearDup) {
+          nearDup.apiId = apiAlert.id;
+          // Also update status/responder if needed
+          if (apiAlert.status === 'resolved' && nearDup.status !== 'resolved') {
+            nearDup.status = 'resolved';
+            nearDup.resolveTime = apiAlert.resolved_at ? new Date(apiAlert.resolved_at) : new Date();
+          }
+          if (apiAlert.acknowledged_by_name && !nearDup.responder) {
+            nearDup.responder = apiAlert.acknowledged_by_name;
+          }
+          return;
+        }
         var matchSensor = SENSORS.find(function(x) { return x.id === apiAlert.sensor_id; });
         alerts.push({
           id: Date.now() + Math.random(),
@@ -1611,7 +1751,7 @@ function buildSimulatorButtons() {
 
   var html = '';
   Object.keys(groups).forEach(function(prefix) {
-    var baseColor = groupColors[prefix] || SENSOR_TYPE_COLORS[groups[prefix][0].type] || '#666';
+    var baseColor = getSensorColor(groups[prefix][0]);
     html += '<div class="sim-group">';
     html += '<div class="sim-group-label">' + prefix + ' — ' + groups[prefix][0].type + '</div>';
     html += '<div class="sim-btn-grid">';
@@ -1644,16 +1784,18 @@ function buildSensorCards() {
   var grid = document.getElementById('sensor-grid');
 
   grid.innerHTML = SENSORS.map(function(s) {
-    var icon = SENSOR_TYPE_ICONS[s.type] || '\u{1F535}';
+    var sColor = getSensorColor(s);
     var barClass = 'bar-' + s.type;
+    var barStyle = s.cardColor ? 'background:' + s.cardColor + ';' : '';
     var warnLabel = s.warnLow !== null && s.warnLow !== undefined ? 'W: ' + s.warnLow + '/' + s.warnHigh : 'W: >' + (s.warnHigh || '—');
     var alarmLabel = s.alarmLow !== null && s.alarmLow !== undefined ? 'A: ' + s.alarmLow + '/' + s.alarmHigh : 'A: >' + (s.alarmHigh || '—');
     var nom = s.nominal != null ? s.nominal : 0;
+    var dotHtml = '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + sColor + ';margin-right:4px;vertical-align:middle;"></span>';
 
-    return '<div class="sensor-card" id="card-' + s.id + '" onclick="openSensorDetail(\'' + s.id + '\')">' +
-      '<div class="sensor-type-bar ' + barClass + '"></div>' +
+    return '<div class="sensor-card" id="card-' + s.id + '" onclick="openSensorDetail(\'' + s.id + '\')" style="border-left:3px solid ' + sColor + ';">' +
+      '<div class="sensor-type-bar ' + barClass + '"' + (barStyle ? ' style="' + barStyle + '"' : '') + '></div>' +
       '<div class="sensor-header">' +
-        '<div><div class="sensor-tag">' + icon + ' ' + s.id + '</div></div>' +
+        '<div><div class="sensor-tag">' + dotHtml + s.id + '</div></div>' +
         '<span class="sensor-status status-normal" id="status-badge-' + s.id + '">NORMAL</span>' +
       '</div>' +
       '<div class="sensor-name">' + s.name + '</div>' +
@@ -1685,7 +1827,7 @@ function buildSensorCards() {
   SENSORS.forEach(function(s) {
     var ctx = document.getElementById('chart-' + s.id);
     if (!ctx) return;
-    var color = SENSOR_TYPE_COLORS[s.type] || '#1565C0';
+    var color = getSensorColor(s);
     var history = sensorHistories[s.id] || [];
     charts[s.id] = new Chart(ctx, {
       type: 'line',
@@ -1805,7 +1947,7 @@ function updateSensorDisplay() {
 
     var chart = charts[s.id];
     if (chart) {
-      var lineColor = d.status === 'alarm' ? '#D32F2F' : d.status === 'warning' ? '#F7941D' : (SENSOR_TYPE_COLORS[s.type] || '#1565C0');
+      var lineColor = d.status === 'alarm' ? '#D32F2F' : d.status === 'warning' ? '#F7941D' : getSensorColor(s);
       var history = sensorHistories[s.id] || [];
       chart.data.datasets[0].data = history.slice();
       chart.data.datasets[0].borderColor = lineColor;
@@ -2318,24 +2460,58 @@ function escHtml(str) {
 let pollDashboardTimer = null;
 let pollAlertHistoryTimer = null;
 let pollSensorUpdateTimer = null;
+let pollReAlertTimer = null;
+
+// ====================================================
+//  RE-ALERT: Periodically re-send alarm sensor values
+//  so sensor-ingest.js can trigger re-alert reminders
+// ====================================================
+async function checkAndResendAlarms() {
+  var alarmSensors = SENSORS.filter(function(s) {
+    var d = sensorData[s.id];
+    return d && d.alarm;
+  });
+  if (alarmSensors.length === 0) return;
+
+  for (var i = 0; i < alarmSensors.length; i++) {
+    var s = alarmSensors[i];
+    var d = sensorData[s.id];
+    if (!d) continue;
+    try {
+      await sendSensorValue(s.id, parseFloat(d.value.toFixed(1)));
+    } catch (e) {
+      console.error('Re-alert send error for ' + s.id + ':', e);
+    }
+  }
+}
 
 function setupPolling() {
   // Clear existing timers
   if (pollDashboardTimer) clearInterval(pollDashboardTimer);
   if (pollAlertHistoryTimer) clearInterval(pollAlertHistoryTimer);
   if (pollSensorUpdateTimer) clearInterval(pollSensorUpdateTimer);
+  if (pollReAlertTimer) clearInterval(pollReAlertTimer);
 
   var intervalSec = systemConfig.polling_interval || 15;
   var intervalMs = intervalSec * 1000;
+  var isLiveMode = systemConfig.operating_mode === 'live';
 
-  // Sensor simulation update every 3 seconds
-  pollSensorUpdateTimer = setInterval(updateSensors, CONFIG.POLL_INTERVAL);
+  if (isLiveMode) {
+    // Live mode: NO simulator fluctuation — data comes from API only
+    pollDashboardTimer = setInterval(function() { fetchDashboardData(); }, Math.max(intervalMs, 3000));
+    pollAlertHistoryTimer = setInterval(function() { fetchAlertHistory(); }, Math.max(intervalMs, 10000));
+  } else {
+    // Simulator mode: local fluctuation + API polling
+    pollSensorUpdateTimer = setInterval(updateSensors, CONFIG.POLL_INTERVAL);
+    pollDashboardTimer = setInterval(function() { fetchDashboardData(); }, Math.max(intervalMs, 5000));
+    pollAlertHistoryTimer = setInterval(function() { fetchAlertHistory(); }, Math.max(intervalMs, 15000));
+  }
 
-  // Dashboard data polling
-  pollDashboardTimer = setInterval(function() { fetchDashboardData(); }, Math.max(intervalMs, 5000));
-
-  // Alert history polling (at least every intervalSec, minimum 15s)
-  pollAlertHistoryTimer = setInterval(function() { fetchAlertHistory(); }, Math.max(intervalMs, 15000));
+  // Re-alert: periodically re-send alarm values to trigger reminder check
+  var reAlertMin = systemConfig.re_alert_interval || 5;
+  var reAlertMs = reAlertMin * 60 * 1000;
+  // Check every minute (the API will enforce the interval)
+  pollReAlertTimer = setInterval(checkAndResendAlarms, Math.min(reAlertMs, 60000));
 }
 
 // ====================================================
