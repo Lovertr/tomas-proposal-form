@@ -1442,7 +1442,16 @@ async function fetchSystemConfig() {
   try {
     var res = await apiGet('/api/dashboard-data?type=system-config');
     if (res && res.config) {
-      systemConfig = Object.assign({}, systemConfig, res.config);
+      // Parse any JSON-encoded string values (e.g. '"simulator"' → 'simulator')
+      var parsed = {};
+      Object.keys(res.config).forEach(function(key) {
+        var val = res.config[key];
+        if (typeof val === 'string') {
+          try { val = JSON.parse(val); } catch(e) {}
+        }
+        parsed[key] = val;
+      });
+      systemConfig = Object.assign({}, systemConfig, parsed);
     }
   } catch (err) {
     console.error('Fetch system config error:', err);
