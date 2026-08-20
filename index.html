@@ -384,15 +384,24 @@
       Sensor Simulator — จำลองสถานการณ์
       <small>กดปุ่มเพื่อส่งค่าเซนเซอร์ (Live Mode = ส่งจริงผ่าน API + แจ้ง LINE)</small>
     </div>
-    <div class="demo-buttons">
-      <button class="btn btn-danger" onclick="triggerSensorAlarm('PT-01')">PT-01 (แรงดันลม)</button>
-      <button class="btn btn-danger" onclick="triggerSensorAlarm('PT-02')">PT-02 (แรงดันน้ำ)</button>
-      <button class="btn btn-danger" onclick="triggerSensorAlarm('FT-01')">FT-01 (น้ำหล่อเย็น)</button>
-      <button class="btn btn-danger" onclick="triggerSensorAlarm('FT-02')">FT-02 (น้ำกระบวนการ)</button>
-      <button class="btn btn-warning" onclick="triggerSensorAlarm('TT-01')">TT-01 (ชิลเลอร์)</button>
-      <button class="btn btn-warning" onclick="triggerSensorAlarm('TT-02')">TT-02 (น้ำขากลับ)</button>
+    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:8px;">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span style="font-size:11px; font-weight:600; color:#D32F2F; min-width:28px;">PT</span>
+        <button class="btn" style="background:#D32F2F; color:#fff; font-size:12px; padding:6px 12px;" onclick="triggerSensorAlarm('PT-01')">PT-01 แรงดันลม</button>
+        <button class="btn" style="background:#E53935; color:#fff; font-size:12px; padding:6px 12px;" onclick="triggerSensorAlarm('PT-02')">PT-02 แรงดันน้ำ</button>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span style="font-size:11px; font-weight:600; color:#1565C0; min-width:28px;">FT</span>
+        <button class="btn" style="background:#1565C0; color:#fff; font-size:12px; padding:6px 12px;" onclick="triggerSensorAlarm('FT-01')">FT-01 น้ำหล่อเย็น</button>
+        <button class="btn" style="background:#1976D2; color:#fff; font-size:12px; padding:6px 12px;" onclick="triggerSensorAlarm('FT-02')">FT-02 น้ำกระบวนการ</button>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span style="font-size:11px; font-weight:600; color:#E65100; min-width:28px;">TT</span>
+        <button class="btn" style="background:#E65100; color:#fff; font-size:12px; padding:6px 12px;" onclick="triggerSensorAlarm('TT-01')">TT-01 ชิลเลอร์</button>
+        <button class="btn" style="background:#EF6C00; color:#fff; font-size:12px; padding:6px 12px;" onclick="triggerSensorAlarm('TT-02')">TT-02 น้ำขากลับ</button>
+      </div>
     </div>
-    <div class="demo-buttons" style="margin-top:6px;">
+    <div class="demo-buttons">
       <button class="btn btn-success" onclick="sendNormalValues()">Send Normal (ค่าปกติ)</button>
       <button class="btn btn-primary" onclick="acknowledgeLatest()">ACK (ยืนยัน)</button>
       <button class="btn btn-success" onclick="resolveLatest()">Resolve (ซ่อมเสร็จ)</button>
@@ -921,12 +930,16 @@ async function triggerSensorAlarm(sensorId) {
   d.alarm = true;
 
   showToast('Sending ' + s.id + ' = ' + d.value.toFixed(1) + ' ' + s.unit + ' to API...', 'info');
-  const result = await sendSensorValue(s.id, parseFloat(d.value.toFixed(1)));
-  if (result) {
-    showToast('API: ' + s.id + ' — ' + (result.anomaly ? 'ALARM triggered! LINE notified' : 'Value stored'), result.anomaly ? 'error' : 'success');
-    if (result.alert_id) {
+  const apiResult = await sendSensorValue(s.id, parseFloat(d.value.toFixed(1)));
+  if (apiResult) {
+    // Extract first result from API response
+    const r = (apiResult.results && apiResult.results[0]) || apiResult;
+    const isAnomaly = r.is_anomaly || r.anomaly;
+    const alertId = r.alert_id;
+    showToast('API: ' + s.id + ' — ' + (isAnomaly ? 'ALARM triggered! LINE notified' : 'Value stored'), isAnomaly ? 'error' : 'success');
+    if (alertId) {
       const alert = {
-        id: Date.now(), apiId: result.alert_id, time: new Date(),
+        id: Date.now(), apiId: alertId, time: new Date(),
         sensorId: s.id, sensorName: s.name,
         value: d.value, unit: s.unit,
         threshold: isHigh ? s.alarmHigh : (s.alarmLow || s.warnHigh),
