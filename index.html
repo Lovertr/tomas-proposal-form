@@ -2510,8 +2510,8 @@ function setupPolling() {
   // Re-alert: periodically re-send alarm values to trigger reminder check
   var reAlertMin = systemConfig.re_alert_interval || 5;
   var reAlertMs = reAlertMin * 60 * 1000;
-  // Check every minute (the API will enforce the interval)
-  pollReAlertTimer = setInterval(checkAndResendAlarms, Math.min(reAlertMs, 60000));
+  // Use the configured re-alert interval directly
+  pollReAlertTimer = setInterval(checkAndResendAlarms, reAlertMs);
 }
 
 // ====================================================
