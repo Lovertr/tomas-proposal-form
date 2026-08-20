@@ -711,9 +711,9 @@ async function fetchDashboardData() {
             time: new Date(apiAlert.triggered_at || apiAlert.created_at),
             sensorId: apiAlert.sensor_id,
             sensorName: apiAlert.sensor_name || apiAlert.sensor_id,
-            value: apiAlert.trigger_value,
+            value: apiAlert.value ?? null,
             unit: SENSORS.find(x => x.id === apiAlert.sensor_id)?.unit || '',
-            threshold: apiAlert.threshold_value,
+            threshold: apiAlert.threshold ?? null,
             direction: apiAlert.direction || 'HIGH',
             severity: apiAlert.severity?.toLowerCase() || 'warning',
             status: apiAlert.status === 'acknowledged' ? 'acknowledged' : 'open',
@@ -750,9 +750,9 @@ async function fetchAlertHistory() {
           time: new Date(apiAlert.triggered_at || apiAlert.created_at),
           sensorId: apiAlert.sensor_id,
           sensorName: apiAlert.sensors?.name || apiAlert.sensor_id,
-          value: apiAlert.trigger_value,
+          value: apiAlert.value ?? null,
           unit: apiAlert.sensors?.unit || SENSORS.find(x => x.id === apiAlert.sensor_id)?.unit || '',
-          threshold: apiAlert.threshold_value,
+          threshold: apiAlert.threshold ?? null,
           direction: apiAlert.direction || 'HIGH',
           severity: apiAlert.severity?.toLowerCase() || 'warning',
           status: apiAlert.status,
@@ -1113,7 +1113,7 @@ function renderAlerts() {
     return '<tr>' +
       '<td>' + formatTime(a.time) + '</td>' +
       '<td><strong>' + a.sensorId + '</strong></td>' +
-      '<td style="font-weight:700; color:var(--danger)">' + a.value.toFixed(1) + ' ' + a.unit + '</td>' +
+      '<td style="font-weight:700; color:var(--danger)">' + (a.value != null ? Number(a.value).toFixed(1) : '—') + ' ' + (a.unit || '') + '</td>' +
       '<td>' + a.direction + ' ' + a.threshold + ' ' + a.unit + '</td>' +
       '<td><span class="severity-badge ' + sevClass + '">' + a.severity + '</span></td>' +
       '<td><span class="status-badge ' + stClass + '">' + stText + '</span></td>' +
@@ -1212,7 +1212,7 @@ async function openSensorDetail(sensorId) {
         const dur = a.response_time_min ? a.response_time_min + ' min' : '—';
         return '<tr>' +
           '<td>' + formatDateTime(a.created_at) + '</td>' +
-          '<td style="font-weight:700;">' + (a.trigger_value || a.value || '—') + ' ' + s.unit + '</td>' +
+          '<td style="font-weight:700;">' + (a.value != null ? Number(a.value).toFixed(1) : '—') + ' ' + s.unit + '</td>' +
           '<td><span class="severity-badge ' + sevClass + '">' + (a.severity || 'warning') + '</span></td>' +
           '<td><span class="status-badge ' + stClass + '">' + (a.status || '').toUpperCase() + '</span></td>' +
           '<td>' + (a.acknowledged_by_name || '—') + '</td>' +
@@ -1241,7 +1241,7 @@ function exportSensorCSV() {
   detailAlerts.forEach(a => {
     rows.push([
       a.created_at || '',
-      a.trigger_value || a.value || '',
+      a.value ?? '',
       s ? s.unit : '',
       a.severity || '',
       a.status || '',
