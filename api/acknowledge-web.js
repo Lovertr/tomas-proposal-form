@@ -44,9 +44,19 @@ module.exports = async function handler(req, res) {
     }
 
     if (alert.status === "acknowledged") {
+      // Look up acknowledger's name
+      let ackName = 'ทีมงาน';
+      if (alert.acknowledged_by) {
+        const { data: ackUser } = await supabase
+          .from("users")
+          .select("display_name")
+          .eq("id", alert.acknowledged_by)
+          .single();
+        if (ackUser) ackName = ackUser.display_name;
+      }
       return res.status(200).send(renderPage(
         "รับทราบแล้ว",
-        `การแจ้งเตือนนี้ถูก acknowledge แล้วโดย ${alert.acknowledged_by || 'ทีมงาน'}`,
+        `การแจ้งเตือนนี้ถูก acknowledge แล้วโดย ${ackName}`,
         "info"
       ));
     }
@@ -99,9 +109,114 @@ module.exports = async function handler(req, res) {
       }
     }
 
+    // Send LINE push with "ซ่อมสำเร็จ" button to the acknowledger
+    const lineToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+    if (lineToken) {
+      const sid = sensor_id || alert.sensor_id;
+      const sName = alert.sensors?.name || sid;
+      try {
+        await fetch("https://api.line.me/v2/bot/message/push", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${lineToken}` },
+          body: JSON.stringify({
+            to: line_user_id,
+            messages: [
+              {
+                type: "flex",
+                altText: `🔧 กำลังดำเนินการซ่อม ${sName}`,
+                contents: {
+                  type: "bubble",
+                  header: {
+                    type: "box", layout: "vertical", backgroundColor: "#F7941D",
+                    contents: [{ type: "text", text: "🔧 กำลังดำเนินการ", color: "#FFFFFF", weight: "bold", size: "lg" }],
+                  },
+                  body: {
+                    type: "box", layout: "vertical", spacing: "sm",
+                    contents: [
+                      { type: "text", text: sName, weight: "bold", size: "md" },
+                      { type: "separator" },
+                      { type: "box", layout: "horizontal", contents: [
+                        { type: "text", text: "Sensor", color: "#999999", size: "sm", flex: 2 },
+                        { type: "text", text: sid, weight: "bold", size: "sm", flex: 3 },
+                      ]},
+                      { type: "text", text: "คุณได้ยืนยันเข้าหน้างานแล้ว\nกรุณากดเมื่อซ่อมเสร็จ", size: "sm", color: "#555555", wrap: true, margin: "md" },
+                    ],
+                  },
+                  footer: {
+                    type: "box", layout: "vertical",
+                    contents: [{
+                      type: "button", style: "primary", color: "#388E3C",
+                      action: { type: "postback", label: "✅ ซ่อมเสร็จแล้ว", data: `action=resolve&alert_id=${alert_id}` },
+                    }],
+                  },
+                },
+              },
+            ],
+          }),
+        });
+      } catch (e) { console.error("LINE push failed:", e.message); }
+    }
+
+    // Also broadcast acknowledge to other assigned users
+    try {
+      const sid = sensor_id || alert.sensor_id;
+      const sName = alert.sensors?.name || sid;
+      const ts = new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok" });
+      const { data: perms } = await supabase
+        .from("user_sensor_permissions")
+        .select("user_id, users(line_user_id)")
+        .eq("sensor_id", sid);
+      if (perms) {
+        const otherIds = perms
+          .map(p => p.users?.line_user_id)
+          .filter(id => id && id !== line_user_id);
+        if (otherIds.length > 0) {
+          const broadcastMsg = {
+            type: "flex",
+            altText: `👷 ${user.display_name} กำลังเข้าดูแล ${sName}`,
+            contents: {
+              type: "bubble",
+              header: { type: "box", layout: "vertical", backgroundColor: "#1B6B93",
+                contents: [{ type: "text", text: "👷 มีผู้เข้าดูแลแล้ว", color: "#FFFFFF", weight: "bold", size: "lg" }] },
+              body: { type: "box", layout: "vertical", spacing: "sm",
+                contents: [
+                  { type: "text", text: sName, weight: "bold", size: "md" },
+                  { type: "separator" },
+                  { type: "box", layout: "horizontal", contents: [
+                    { type: "text", text: "Sensor", color: "#999999", size: "sm", flex: 2 },
+                    { type: "text", text: sid, weight: "bold", size: "sm", flex: 3 },
+                  ]},
+                  { type: "box", layout: "horizontal", contents: [
+                    { type: "text", text: "ผู้เข้าดูแล", color: "#999999", size: "sm", flex: 2 },
+                    { type: "text", text: user.display_name, weight: "bold", color: "#1B6B93", size: "sm", flex: 3 },
+                  ]},
+                  { type: "box", layout: "horizontal", contents: [
+                    { type: "text", text: "เวลา", color: "#999999", size: "sm", flex: 2 },
+                    { type: "text", text: ts, size: "sm", flex: 3 },
+                  ]},
+                ],
+              },
+            },
+          };
+          const pushFn = otherIds.length === 1
+            ? fetch("https://api.line.me/v2/bot/message/push", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${lineToken}` },
+                body: JSON.stringify({ to: otherIds[0], messages: [broadcastMsg] }),
+              })
+            : fetch("https://api.line.me/v2/bot/message/multicast", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${lineToken}` },
+                body: JSON.stringify({ to: otherIds, messages: [broadcastMsg] }),
+              });
+          await pushFn;
+        }
+      }
+    } catch (e) { console.error("Broadcast failed:", e.message); }
+
     return res.status(200).send(renderPage(
       "ยืนยันสำเร็จ ✅",
-      `${user.display_name} ได้ยืนยันเข้าหน้างานเพื่อตรวจสอบ ${sensor_id || alert.sensor_id} แล้ว<br><br>ระบบจะแจ้งทีมงานทุกคนทราบ`,
+      `${user.display_name} ได้ยืนยันเข้าหน้างานเพื่อตรวจสอบ ${sensor_id || alert.sensor_id} แล้ว<br><br>ระบบจะแจ้งทีมงานทุกคนทราบ<br>กรุณากลับไปที่ LINE เพื่อกดซ่อมสำเร็จเมื่อเสร็จงาน`,
       "success"
     ));
 
