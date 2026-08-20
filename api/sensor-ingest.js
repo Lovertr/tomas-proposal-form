@@ -283,6 +283,33 @@ module.exports = async function handler(req, res) {
           .single();
 
         if (!existingAlert) {
+          // Resolve cooldown: skip creating new alert if same sensor was resolved recently
+          const cooldownMs = reAlertIntervalMin * 60 * 1000;
+          const cooldownAgo = new Date(Date.now() - cooldownMs).toISOString();
+          const { data: recentResolve } = await supabase
+            .from("alert_actions")
+            .select("id, alert_id")
+            .eq("action", "resolved")
+            .gte("created_at", cooldownAgo)
+            .limit(5);
+
+          // Check if any recent resolve was for this sensor
+          let resolvedRecently = false;
+          if (recentResolve && recentResolve.length > 0) {
+            const resolvedAlertIds = recentResolve.map(r => r.alert_id);
+            const { data: resolvedAlerts } = await supabase
+              .from("alerts")
+              .select("id")
+              .eq("sensor_id", sensor_id)
+              .in("id", resolvedAlertIds)
+              .limit(1);
+            resolvedRecently = resolvedAlerts && resolvedAlerts.length > 0;
+          }
+
+          if (resolvedRecently) {
+            result.alert_status = "cooldown";
+            result.cooldown_minutes = reAlertIntervalMin;
+          } else {
           // Create new alert
           const { data: alertData, error: alertError } = await supabase
             .from("alerts")
@@ -357,6 +384,7 @@ module.exports = async function handler(req, res) {
             result.alert_id = alertData.id;
             result.alert_status = "new";
           }
+          } // end: not resolvedRecently
         } else {
           result.alert_id = existingAlert.id;
           result.alert_status = "existing";
