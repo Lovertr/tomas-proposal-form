@@ -1698,12 +1698,22 @@ async function fetchDashboardData() {
       if (!d) return;
       var hasOpenAlert = alerts.some(function(a) { return a.sensorId === s.id && (a.status === 'open' || a.status === 'acknowledged'); });
       var apiHasOpen = (alertsRes.alerts || []).some(function(a) { return a.sensor_id === s.id; });
+      // Case 1: alarm flag is true but no open alert — resolve just happened
       if (!hasOpenAlert && !apiHasOpen && d.alarm) {
         d.alarm = false;
         d.status = 'normal';
-        d.value = s.nominal;
-        // Send nominal value to API so latest_readings shows normal value (prevents re-trigger)
-        sendSensorValue(s.id, parseFloat(s.nominal.toFixed(1))).catch(function() {});
+        var safeTarget = (s.warnLow != null && s.warnHigh != null) ? (s.warnLow + s.warnHigh) / 2 : s.nominal;
+        d.value = safeTarget;
+        // Send safe value to API so latest_readings shows normal value
+        sendSensorValue(s.id, parseFloat(safeTarget.toFixed(1))).catch(function() {});
+      }
+      // Case 2: LIVE mode stale reading — value exceeds threshold but no alert exists
+      // This means old simulator data is stuck in DB. Send nominal to clear it.
+      if (!hasOpenAlert && !apiHasOpen && !d.alarm && (d.status === 'alarm' || d.status === 'warning')) {
+        var safeVal = (s.warnLow != null && s.warnHigh != null) ? (s.warnLow + s.warnHigh) / 2 : s.nominal;
+        d.value = safeVal;
+        d.status = 'normal';
+        sendSensorValue(s.id, parseFloat(safeVal.toFixed(1))).catch(function() {});
       }
     });
 
